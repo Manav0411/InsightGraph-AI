@@ -1,3 +1,4 @@
+import time
 from models.state import PipelineState
 from utils.logger import get_logger
 from config.settings import MAX_ARTICLES
@@ -10,6 +11,7 @@ def rank_articles(state: PipelineState) -> PipelineState:
     and returning only the highest-signal items to be analyzed.
     Operates purely on the PipelineState object.
     """
+    start_time = time.perf_counter()
     state.pipeline_stage = "ranking"
     logger.info("Ranking and scoring retrieved articles...")
     
@@ -50,7 +52,11 @@ def rank_articles(state: PipelineState) -> PipelineState:
     # Keep top articles based on config
     top_articles = state.articles[:MAX_ARTICLES]
     
-    logger.info(f"Ranked {len(state.articles)} articles. Kept top {len(top_articles)} for downstream analysis.")
+    elapsed_time = round(time.perf_counter() - start_time, 2)
+    state.metadata.agent_timings["ranker"] = elapsed_time
+    
+    logger.info(f"[Ranker] Ranked {len(state.articles)} articles. Kept top {len(top_articles)} for downstream analysis.")
+    logger.info(f"[Ranker] Completed in {elapsed_time}s")
     
     state.articles = top_articles
     return state

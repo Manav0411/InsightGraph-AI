@@ -26,6 +26,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
     Features source-aware analysis to properly differentiate news articles from GitHub repositories.
     Operates purely on the PipelineState object.
     """
+    start_time = time.perf_counter()
     state.pipeline_stage = "analysis"
     logger.info("Analyzing articles using Groq...")
     
@@ -44,8 +45,8 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         api_key=api_key
     )
     
-    # Set up structured output
-    structured_llm = llm.with_structured_output(ArticleAnalysis)
+    # Set up structured output with include_raw=True to capture token usage metadata
+    structured_llm = llm.with_structured_output(ArticleAnalysis, include_raw=True)
     
     news_chain = news_prompt | structured_llm
     github_chain = github_prompt | structured_llm
@@ -64,11 +65,11 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         try:
             # Implement auto-retry on rate limit errors
             retries = 0
-            analysis = None
+            analysis_dict = None
             
             while True:
                 try:
-                    analysis = chain.invoke({
+                    analysis_dict = chain.invoke({
                         "title": article.title,
                         "content": truncated_content
                     })
@@ -86,10 +87,20 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                     else:
                         raise e
             
+            # Extract structured response and raw token usage
+            analysis = analysis_dict.get("parsed")
+            raw_msg = analysis_dict.get("raw")
+            
+            if raw_msg and hasattr(raw_msg, "response_metadata"):
+                token_usage = raw_msg.response_metadata.get("token_usage", {})
+                state.metadata.total_prompt_tokens += token_usage.get("prompt_tokens", 0)
+                state.metadata.total_completion_tokens += token_usage.get("completion_tokens", 0)
+            
             # Mutate Pydantic article object in-place
-            article.summary = analysis.summary
-            article.why_it_matters = analysis.why_it_matters
-            article.tags = analysis.tags
+            if analysis:
+                article.summary = analysis.summary
+                article.why_it_matters = analysis.why_it_matters
+                article.tags = analysis.tags
             
             state.metadata.total_articles_processed += 1
             
@@ -105,5 +116,9 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         # Throttling sleep between articles
         if idx < total_articles:
             time.sleep(ANALYSIS_THROTTLE_SECONDS)
+            
+    elapsed_time = round(time.perf_counter() - start_time, 2)
+    state.metadata.agent_timings["analyzer"] = elapsed_time
+    logger.info(f"[Analyzer] Completed in {elapsed_time}s")
             
     return state

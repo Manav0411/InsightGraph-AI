@@ -1,3 +1,4 @@
+import time
 from models.state import PipelineState
 from utils.logger import get_logger
 from config.settings import MIN_TREND_SCORE, MIN_SUMMARY_WORDS
@@ -10,6 +11,7 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
     Filters out any articles that failed generation, are malformed, or have low intelligence signal.
     Operates purely on the PipelineState object.
     """
+    start_time = time.perf_counter()
     state.pipeline_stage = "evaluation"
     logger.info("Evaluating generated content...")
     
@@ -63,5 +65,11 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
         
     state.articles = valid_articles
     
-    logger.info(f"Evaluation completed. Retained {len(valid_articles)} valid articles (rejected {state.metadata.total_articles_rejected}).")
+    elapsed_time = round(time.perf_counter() - start_time, 2)
+    state.metadata.agent_timings["evaluator"] = elapsed_time
+    
+    logger.info(f"[Evaluator] Rejected {state.metadata.total_articles_rejected} low-quality articles.")
+    logger.info(f"[Evaluator] Evaluation completed. Retained {len(valid_articles)} valid articles.")
+    logger.info(f"[Evaluator] Completed in {elapsed_time}s")
+    
     return state

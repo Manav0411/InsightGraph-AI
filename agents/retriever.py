@@ -1,3 +1,4 @@
+import time
 from typing import Dict, Any, List
 from services.tavily_service import fetch_ai_news
 from services.github_service import fetch_github_trends
@@ -6,12 +7,12 @@ from utils.logger import get_logger
 
 logger = get_logger("retriever")
 
-def retrieve_articles() -> PipelineState:
+def retrieve_articles(state: PipelineState) -> PipelineState:
     """
     Agent responsible for retrieving articles from various services.
     Acts as the strict normalization boundary. Converts external raw dicts into Pydantic state.
     """
-    state = PipelineState()
+    start_time = time.perf_counter()
     state.pipeline_stage = "retrieval"
     
     logger.info("Starting article retrieval...")
@@ -66,6 +67,10 @@ def retrieve_articles() -> PipelineState:
             
     state.metadata.total_articles_retrieved = len(state.articles)
     
-    logger.info(f"Retrieved {len(all_articles_raw)} total articles. Deduplicated to {len(state.articles)} unique Pydantic Articles.")
+    elapsed_time = round(time.perf_counter() - start_time, 2)
+    state.metadata.agent_timings["retriever"] = elapsed_time
+    
+    logger.info(f"[Retriever] Retrieved {len(all_articles_raw)} total articles. Deduplicated to {len(state.articles)} unique Pydantic Articles.")
+    logger.info(f"[Retriever] Completed in {elapsed_time}s")
     
     return state

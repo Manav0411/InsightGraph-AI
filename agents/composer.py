@@ -1,15 +1,17 @@
 import os
+import time
 from models.state import PipelineState
 from utils.logger import get_logger
 
 logger = get_logger("composer")
 
-def compose_newsletter(state: PipelineState) -> str:
+def compose_newsletter(state: PipelineState) -> PipelineState:
     """
     Agent responsible for formatting the analyzed articles into a Markdown newsletter.
     Organizes by source and sorts by trend score for maximum readability.
     This is the ONLY layer responsible for markdown generation.
     """
+    start_time = time.perf_counter()
     state.pipeline_stage = "composition"
     logger.info("Composing newsletter...")
     
@@ -63,7 +65,12 @@ def compose_newsletter(state: PipelineState) -> str:
             markdown_content += f"**Why it matters:** {why_it_matters}\n\n"
             markdown_content += "---\n\n"
             
-    return markdown_content
+    elapsed_time = round(time.perf_counter() - start_time, 2)
+    state.metadata.agent_timings["composer"] = elapsed_time
+    logger.info(f"[Composer] Completed in {elapsed_time}s")
+            
+    state.final_newsletter = markdown_content
+    return state
 
 def save_newsletter(markdown_content: str, filepath: str = "output/newsletter.md"):
     """

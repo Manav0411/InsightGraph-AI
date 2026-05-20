@@ -13,7 +13,7 @@ for all agent communication in the pipeline.
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 
 
@@ -63,6 +63,11 @@ class PipelineMetadata(BaseModel):
     total_articles_rejected: int = 0
 
     execution_time_seconds: float = 0.0
+    
+    agent_timings: Dict[str, float] = Field(default_factory=dict)
+    
+    total_prompt_tokens: int = 0
+    total_completion_tokens: int = 0
 
     retrieval_sources: List[str] = Field(default_factory=list)
 
@@ -85,3 +90,5 @@ class PipelineState(BaseModel):
     errors: List[str] = Field(default_factory=list)
     warnings: List[str] = Field(default_factory=list)
     pipeline_stage: str = "initialized"
+    
+    final_newsletter: Optional[str] = None
