@@ -71,3 +71,16 @@ Ad-hoc `print()` statements were entirely removed in favor of a centralized Pyth
 
 ### Modular Configuration & Externalized Prompts
 All "magic numbers" (retry limits, tokens, slice limits) were aggressively centralized into `config/settings.py`. Moreover, the LLM prompts were ripped out of the analyzer logic and moved to a dedicated `prompts/` directory. This creates a beautifully decoupled environment where prompt engineers can version and experiment with analysis instructions without ever touching the execution Python code.
+
+---
+
+## Observability & Execution Tracing (LangSmith)
+
+### Workflow Introspection & Node Analytics
+Moving to a LangGraph `StateGraph` allowed us to inject precise performance analytics directly into our `PipelineMetadata`. By wrapping each agent node with `time.perf_counter()`, we can instantly identify bottlenecks (e.g., retrieving data vs. waiting for LLM inference). These timings are embedded directly into the state so that frontend dashboards or tracing systems can visualize the pipeline's exact execution timeline.
+
+### Token Economics Monitoring
+Relying on abstract LLM calls without monitoring cost can be dangerous. We successfully integrated Groq token tracking into our LangGraph state by leveraging LangChain's `include_raw=True` in the `with_structured_output` LLM bindings. This allows the system to extract precise `prompt_tokens` and `completion_tokens` straight from the API's `response_metadata` and log them at the end of the pipeline.
+
+### The Value of Graph Visualization
+Exporting the `StateGraph` logic directly into Mermaid and PNG diagrams via `graph.get_graph().draw_mermaid()` provides a living architectural diagram that perfectly represents the actual executed code. It is an invaluable tool for debugging complex routing, updating architecture diagrams in READMEs, and sharing workflow designs without manually drawing flowcharts.
