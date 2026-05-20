@@ -84,3 +84,19 @@ Relying on abstract LLM calls without monitoring cost can be dangerous. We succe
 
 ### The Value of Graph Visualization
 Exporting the `StateGraph` logic directly into Mermaid and PNG diagrams via `graph.get_graph().draw_mermaid()` provides a living architectural diagram that perfectly represents the actual executed code. It is an invaluable tool for debugging complex routing, updating architecture diagrams in READMEs, and sharing workflow designs without manually drawing flowcharts.
+
+---
+
+## Adaptive Resilient Orchestration (Conditional Routing & Recovery)
+
+### Building Fault-Tolerant AI Workflows
+Linear execution pipelines are fragile; if a rate limit occurs, an API times out, or the initial data retrieved does not meet the newsletter's strict quality standards (e.g. poor source diversity or insufficient articles), the entire run fails. Transitioning to a looping, adaptive `StateGraph` allows the system to recover autonomously by routing dynamically:
+1. **Analyzer Recovery Loop:** If an LLM call fails due to connection drops or Groq service hiccups, the graph routes back to the Analyzer to retry. To avoid wasting tokens and duplicate API calls, we optimize the Analyzer node to skip already successfully analyzed articles in the State, retrying only the failures.
+2. **Retrieval Recovery Loop:** If the Evaluator determines that the analyzed articles lack source diversity (e.g., missing GitHub or Tavily entries) or are insufficient in count (< 5 articles), the workflow routes back to the Retriever. The Retriever adapts by scaling up its search limit (`tavily_max` and `github_max` scale dynamically based on the current `recovery_attempts`), pulling deeper content and deduplicating it against existing articles.
+
+### Preventing Infinite Loops in Looping Graphs
+A primary challenge in non-linear agentic workflows is the risk of infinite loops (e.g., the Evaluator rejecting content forever and looping back to the Retriever indefinitely). We mitigate this by:
+- Centralizing execution constraints: Adding explicit state-level loop limits (`retry_count` and `max_retries = 2`, and an analyzer retry limit of `1`).
+- Ensuring state mutations happen exclusively within nodes (Retriever/Analyzer) rather than routing functions, adhering to LangGraph's deterministic state-channel design.
+- Implementing a graceful fallback path in the Evaluator routing logic: if the quality checks fail but `retry_count >= max_retries`, the graph routes to the Composer anyway, ensuring a newsletter is always generated in a degraded state rather than hanging or failing.
+

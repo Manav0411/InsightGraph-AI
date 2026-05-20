@@ -54,7 +54,10 @@ def main():
         save_newsletter(final_state.final_newsletter, output_path)
         
         # Log final observability metrics
-        logger.info(f"Pipeline completed successfully in {final_state.metadata.execution_time_seconds} seconds.")
+        logger.info(f"Pipeline completed in {final_state.metadata.execution_time_seconds} seconds.")
+        logger.info(f"Recovery Attempts Triggered: {final_state.metadata.recovery_attempts}")
+        logger.info(f"Conditional Routes Traversed: {final_state.metadata.conditional_routes_triggered}")
+        logger.info(f"Total Articles Rejected: {final_state.metadata.total_articles_rejected}")
         logger.info(f"Prompt Tokens: {final_state.metadata.total_prompt_tokens}")
         logger.info(f"Completion Tokens: {final_state.metadata.total_completion_tokens}")
         logger.info(f"Saved newsletter to {output_path}")

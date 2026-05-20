@@ -65,6 +65,20 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
         
     state.articles = valid_articles
     
+    # Perform source diversity, quality baseline, and count checks
+    has_github = any(a.source == "github" for a in valid_articles)
+    has_tavily = any(a.source == "tavily" for a in valid_articles)
+    avg_trend_score = sum(a.trend_score for a in valid_articles) / len(valid_articles) if valid_articles else 0.0
+    
+    if len(valid_articles) < 5:
+        logger.warning(f"[Evaluator] Warning: Insufficient valid articles count ({len(valid_articles)}/5).")
+    if not has_github:
+        logger.warning("[Evaluator] Warning: Source diversity check failed. No GitHub repositories found.")
+    if not has_tavily:
+        logger.warning("[Evaluator] Warning: Source diversity check failed. No Tavily news articles found.")
+    if avg_trend_score < 2.0:
+        logger.warning(f"[Evaluator] Warning: Average trend score is below baseline ({round(avg_trend_score, 2)} < 2.0).")
+        
     elapsed_time = round(time.perf_counter() - start_time, 2)
     state.metadata.agent_timings["evaluator"] = elapsed_time
     

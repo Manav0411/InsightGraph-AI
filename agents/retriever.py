@@ -13,16 +13,36 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     Acts as the strict normalization boundary. Converts external raw dicts into Pydantic state.
     """
     start_time = time.perf_counter()
+    
+    # Detect recovery route transition from Evaluator
+    if state.pipeline_stage == "evaluation":
+        state.retry_count += 1
+        state.metadata.recovery_attempts += 1
+        state.metadata.conditional_routes_triggered += 1
+        logger.warning(
+            f"[Graph] Routing from Evaluator → Retriever. "
+            f"Retry Count: {state.retry_count}/{state.max_retries}"
+        )
+        
     state.pipeline_stage = "retrieval"
     
-    logger.info("Starting article retrieval...")
+    recovery_attempts = state.metadata.recovery_attempts
+    if recovery_attempts > 0:
+        logger.info(f"Starting article retrieval recovery run (attempt {recovery_attempts})...")
+    else:
+        logger.info("Starting article retrieval...")
+        
+    # Scale max results dynamically to fetch deeper when retrying
+    tavily_max = 5 + recovery_attempts * 3
+    github_max = 10 + recovery_attempts * 5
+    
     all_articles_raw = []
     
     # 1. Fetch from Tavily Service
     try:
-        tavily_articles = fetch_ai_news()
+        tavily_articles = fetch_ai_news(max_results=tavily_max)
         all_articles_raw.extend(tavily_articles)
-        if tavily_articles:
+        if tavily_articles and "tavily" not in state.metadata.retrieval_sources:
             state.metadata.retrieval_sources.append("tavily")
     except Exception as e:
         logger.error(f"Error retrieving from Tavily service: {e}")
@@ -30,15 +50,15 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
         
     # 2. GitHub Integration
     try:
-        github_articles = fetch_github_trends()
+        github_articles = fetch_github_trends(max_results=github_max)
         all_articles_raw.extend(github_articles)
-        if github_articles:
+        if github_articles and "github" not in state.metadata.retrieval_sources:
             state.metadata.retrieval_sources.append("github")
     except Exception as e:
         logger.error(f"Error retrieving from GitHub service: {e}")
         state.errors.append(f"GitHub retrieval failed: {e}")
         
-    # Deduplicate articles based on title.lower()
+    # Deduplicate raw fetched articles against themselves based on title.lower()
     deduplicated_raw = []
     seen_titles = set()
     
@@ -54,23 +74,32 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
             seen_titles.add(title_lower)
             deduplicated_raw.append(raw)
             
-    # Normalize to Pydantic Articles
+    # Deduplicate and append to state.articles (avoiding overwriting previously accepted articles)
+    existing_titles = {a.title.strip().lower() for a in state.articles}
+    new_articles_count = 0
+    
     for raw in deduplicated_raw:
-        article = Article(
-            title=raw.get("title", "Untitled"),
-            url=raw.get("url", ""),
-            content=raw.get("content", ""),
-            source=raw.get("source", "unknown"),
-            stars=raw.get("stars", None)
-        )
-        state.articles.append(article)
+        title = raw.get("title", "Untitled")
+        title_lower = title.strip().lower()
+        
+        if title_lower not in existing_titles:
+            article = Article(
+                title=title,
+                url=raw.get("url", ""),
+                content=raw.get("content", ""),
+                source=raw.get("source", "unknown"),
+                stars=raw.get("stars", None)
+            )
+            state.articles.append(article)
+            existing_titles.add(title_lower)
+            new_articles_count += 1
             
     state.metadata.total_articles_retrieved = len(state.articles)
     
     elapsed_time = round(time.perf_counter() - start_time, 2)
     state.metadata.agent_timings["retriever"] = elapsed_time
     
-    logger.info(f"[Retriever] Retrieved {len(all_articles_raw)} total articles. Deduplicated to {len(state.articles)} unique Pydantic Articles.")
+    logger.info(f"[Retriever] Retrieved {len(all_articles_raw)} total raw articles. Appended {new_articles_count} new unique Pydantic Articles.")
     logger.info(f"[Retriever] Completed in {elapsed_time}s")
     
     return state

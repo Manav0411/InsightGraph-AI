@@ -21,12 +21,25 @@ class ArticleAnalysis(BaseModel):
 
 def analyze_articles(state: PipelineState) -> PipelineState:
     """
-    Agent responsible for analyzing and summarizing articles using Groq.
-    Implements throttling, content truncation, output token optimization, and rate limit retry handling.
+    Agent responsible for analyzing each retrieved article using the Groq API.
     Features source-aware analysis to properly differentiate news articles from GitHub repositories.
     Operates purely on the PipelineState object.
     """
     start_time = time.perf_counter()
+    
+    # Detect analyzer self-retry transition
+    if state.pipeline_stage == "analysis":
+        state.analyzer_retry_count += 1
+        state.metadata.recovery_attempts += 1
+        state.metadata.conditional_routes_triggered += 1
+        logger.warning(
+            f"[Graph] Routing from Analyzer → Analyzer (Retry). "
+            f"Retry Count: {state.analyzer_retry_count}/1"
+        )
+        # Clear out previous analyzer errors so they don't compound
+        state.errors = [e for e in state.errors if not ("Analysis failed" in e or "analyzer" in e.lower())]
+        state.warnings = [w for w in state.warnings if not ("Analysis failed" in w or "analyzer" in w.lower())]
+        
     state.pipeline_stage = "analysis"
     logger.info("Analyzing articles using Groq...")
     
@@ -51,9 +64,18 @@ def analyze_articles(state: PipelineState) -> PipelineState:
     news_chain = news_prompt | structured_llm
     github_chain = github_prompt | structured_llm
     
+    # Reset processed count at the start of analysis to prevent double counting on retries
+    state.metadata.total_articles_processed = 0
+    
     total_articles = len(state.articles)
     
     for idx, article in enumerate(state.articles, 1):
+        # Skip if already successfully analyzed in a previous attempt
+        if article.summary and article.summary != "Summary generation failed.":
+            logger.info(f"Skipping already-analyzed article {idx}/{total_articles}: {article.title}")
+            state.metadata.total_articles_processed += 1
+            continue
+            
         logger.info(f"Analyzing article {idx}/{total_articles}: {article.title}")
         
         # Truncate content to optimize token usage

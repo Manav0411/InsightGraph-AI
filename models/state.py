@@ -69,6 +69,9 @@ class PipelineMetadata(BaseModel):
     total_prompt_tokens: int = 0
     total_completion_tokens: int = 0
 
+    recovery_attempts: int = 0
+    conditional_routes_triggered: int = 0
+
     retrieval_sources: List[str] = Field(default_factory=list)
 
     generated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -90,5 +93,9 @@ class PipelineState(BaseModel):
     errors: List[str] = Field(default_factory=list)
     warnings: List[str] = Field(default_factory=list)
     pipeline_stage: str = "initialized"
+    
+    retry_count: int = 0
+    max_retries: int = 2
+    analyzer_retry_count: int = 0
     
     final_newsletter: Optional[str] = None
