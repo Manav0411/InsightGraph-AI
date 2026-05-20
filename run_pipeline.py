@@ -1,36 +1,45 @@
 import os
+import time
 from agents.retriever import retrieve_articles
+from agents.ranker import rank_articles
 from agents.analyzer import analyze_articles
 from agents.composer import compose_newsletter, save_newsletter
 from agents.evaluator import evaluate_newsletter
+from utils.logger import get_logger
+
+logger = get_logger("orchestrator")
 
 def main():
-    print("Starting AI Trend Intelligence Pipeline...\n")
+    start_time = time.time()
+    logger.info("Starting AI Trend Intelligence Pipeline...")
     
     # Step 1: Retriever
-    retrieved_data = retrieve_articles()
-    num_articles = len(retrieved_data.get("articles", []))
-    print(f"✓ Retrieved {num_articles} articles\n")
+    state = retrieve_articles()
     
-    if num_articles == 0:
-        print("Pipeline stopped: No articles retrieved.")
+    if state.metadata.total_articles_retrieved == 0:
+        logger.warning("Pipeline stopped: No articles retrieved.")
         return
 
-    # Step 2: Analyzer
-    analyzed_data = analyze_articles(retrieved_data)
-    print("\n✓ Generated summaries\n")
+    # Step 2: Ranker
+    state = rank_articles(state)
+
+    # Step 3: Analyzer
+    state = analyze_articles(state)
     
-    # Step 3: Evaluator (Basic validation step)
-    evaluate_newsletter(analyzed_data)
+    # Step 4: Evaluator (Quality Control)
+    state = evaluate_newsletter(state)
     
-    # Step 4: Composer
-    markdown_content = compose_newsletter(analyzed_data)
-    print("\n✓ Created newsletter\n")
+    # Finalize Metadata before Composer
+    state.metadata.execution_time_seconds = round(time.time() - start_time, 2)
     
-    # Step 5: Save Output
+    # Step 5: Composer
+    markdown_content = compose_newsletter(state)
+    
+    # Step 6: Save Output
     output_path = "output/newsletter.md"
     save_newsletter(markdown_content, output_path)
-    print(f"✓ Saved newsletter to {output_path}\n")
+    logger.info(f"Pipeline completed successfully in {state.metadata.execution_time_seconds} seconds.")
+    logger.info(f"Saved newsletter to {output_path}")
 
 if __name__ == "__main__":
     main()
