@@ -100,3 +100,36 @@ A primary challenge in non-linear agentic workflows is the risk of infinite loop
 - Ensuring state mutations happen exclusively within nodes (Retriever/Analyzer) rather than routing functions, adhering to LangGraph's deterministic state-channel design.
 - Implementing a graceful fallback path in the Evaluator routing logic: if the quality checks fail but `retry_count >= max_retries`, the graph routes to the Composer anyway, ensuring a newsletter is always generated in a degraded state rather than hanging or failing.
 
+---
+
+## Personalization & User Intelligence Layer
+
+### Heuristic-Based vs. Machine Learning Recommendations
+In a production-style, high-speed newsletter pipeline, implementing full vector databases, embeddings, and machine learning recommendation models is often overkill, resource-intensive, and adds non-deterministic complexity. 
+By leveraging deterministic, heuristic-based personalization boosts (e.g., matching user preferences and source exclusions case-insensitively directly against article metadata), we achieve:
+- **Instant, predictable behavior**: Perfect for debugging and unit testing.
+- **Extreme speed**: O(1) matching over a pre-selected set of candidate articles, requiring zero extra network requests or vector lookups.
+- **Hybrid Scoring**: Integrating the personalization boost directly with the baseline `trend_score` ensures we balance the user's specific topics of interest with global popularity signals (like GitHub stars or trending keywords).
+
+### Soft Filtering vs. Hard Pruning
+A major design challenge when personalizing content is "filter bubbles" and empty results. If a user excludes a topic (e.g. "Robotics") or limits preferred topics, a strict hard-pruning filter would completely discard those articles. In retrieval scenarios where data is scarce, this can easily lead to empty newsletters.
+Instead of hard-filtering, we implement a **Soft Penalty** (e.g., deducting `-5.0` from the trend score). This pushes the excluded content to the bottom of the list without completely erasing it, preserving the agent's ability to explore and display highly trending content if it has exceptionally high quality (e.g., a massive new repository with 20k stars).
+
+### In-Memory State Propagation
+To keep downstream nodes completely decoupled from filesystem operations, we load the user's JSON profile at the entry point (`run_pipeline.py`) and propagate it as a first-class component of the `PipelineState`. Downstream nodes (`ranker.py` and `composer.py`) access this profile directly from memory. This prevents redundant disk reads and makes testing individual graph nodes with custom profiles trivial.
+
+---
+
+## Grounding & Content Validation Layer
+
+### Hallucination Prevention & Trust
+Building a platform that is highly personalized means nothing if the underlying intelligence is hallucinated. In agentic workflows, "topic contamination" often happens when a noisy, multi-story article is passed to an LLM, causing the LLM to summarize an unrelated subplot instead of the primary article. By enforcing strict grounding constraints at the prompt level and implementing a deterministic `Validator` agent early in the graph, we dramatically improve the reliability and trustworthiness of the final digest.
+
+### Retrieval Sanitation & Noise Reduction
+Before LLM analysis even begins, it is critical to sanitize the retrieved HTML blobs. We introduced `utils/content_cleaner.py` to strip out repetitive navigation text, "related stories" links, and advertisements. Furthermore, aggressively truncating the article content (e.g., to 1200 characters) before sending it to the Analyzer forces the LLM to focus purely on the core thesis of the article, significantly reducing the surface area for hallucinations and saving token costs.
+
+### Deterministic Validation Heuristics
+While we could use LLMs to validate the alignment between an article's title and its content, doing so for every retrieved raw article (e.g., 40+ articles) is computationally expensive and slow. Instead, we deployed a deterministic, heuristic-based `Validator` that extracts keywords from the title and measures overlap in the content. This O(1) keyword-matching heuristic successfully acts as a fast, cheap firewall that drops wildly unrelated articles before they ever consume API tokens.
+
+### Summary Grounding Evaluation
+The `Evaluator` was upgraded to check for "misaligned summaries". By cross-referencing the generated summary against the original article's title keywords, the Evaluator can automatically reject outputs where the LLM hallucinated entirely different topics. This ensures that what the user reads in the newsletter perfectly matches the cited source URL, preparing the system for production deployment and frontend user-trust.

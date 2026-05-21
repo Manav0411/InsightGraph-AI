@@ -60,6 +60,24 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
             state.metadata.total_articles_rejected += 1
             continue
             
+        # 6. Validate summary grounding against title
+        import re
+        title_words_for_eval = re.findall(r'\b\w+\b', title.lower())
+        stop_words = {"a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or", "with", "is", "are", "was", "were", "it", "this", "that", "by", "as", "from", "be", "how", "what", "why", "new", "about"}
+        keywords = {word for word in title_words_for_eval if word not in stop_words and len(word) > 2}
+        
+        summary_lower = summary.lower()
+        if keywords:
+            match_count = sum(1 for kw in keywords if kw in summary_lower)
+            overlap_ratio = match_count / len(keywords)
+            
+            # If the summary doesn't reference at least some key concepts from the title, reject as hallucination
+            if overlap_ratio < 0.1 and match_count == 0:
+                logger.warning(f"[Evaluator] Rejected hallucinated/misaligned summary for article: '{title}'")
+                state.metadata.total_articles_rejected += 1
+                state.metadata.grounding_rejections += 1
+                continue
+            
         seen_titles.add(title)
         valid_articles.append(article)
         

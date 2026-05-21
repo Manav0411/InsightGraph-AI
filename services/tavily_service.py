@@ -2,6 +2,7 @@ import os
 from tavily import TavilyClient
 from typing import List, Dict, Any
 from dotenv import load_dotenv
+from utils.content_cleaner import clean_html_noise, normalize_content
 
 load_dotenv()
 
@@ -49,10 +50,14 @@ def fetch_ai_news(queries: List[str] = None, max_results: int = 5) -> List[Dict[
             print(f"Retrieved {len(results)} articles")
             
             for result in results:
+                raw_content = result.get("content", "")
+                cleaned = clean_html_noise(raw_content)
+                normalized = normalize_content(cleaned)
+                
                 all_results.append({
                     "title": result.get("title", ""),
                     "url": result.get("url", ""),
-                    "content": result.get("content", ""),
+                    "content": normalized,
                     "source": "tavily"
                 })
         except Exception as e:

@@ -42,6 +42,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         
     state.pipeline_stage = "analysis"
     logger.info("Analyzing articles using Groq...")
+    logger.info("[Analyzer] Using grounded summarization mode")
     
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -78,8 +79,8 @@ def analyze_articles(state: PipelineState) -> PipelineState:
             
         logger.info(f"Analyzing article {idx}/{total_articles}: {article.title}")
         
-        # Truncate content to optimize token usage
-        truncated_content = article.content[:MAX_CONTENT_LENGTH]
+        # Truncate content to 1200 chars to reduce context noise and prevent topic contamination
+        truncated_content = article.content[:1200]
         
         # Route to the appropriate processing chain
         chain = github_chain if article.source == "github" else news_chain

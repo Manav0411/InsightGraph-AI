@@ -1,0 +1,16 @@
+{
+  "user_id": "manav",
+  "email": "manav@example.com",
+  "preferences": {
+    "preferred_topics": [
+      "AI Agents",
+      "Coding Assistants"
+    ],
+    "preferred_sources": [
+      "github"
+    ],
+    "excluded_topics": [
+      "Robotics"
+    ]
+  }
+}

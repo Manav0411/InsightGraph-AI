@@ -4,6 +4,7 @@ from models.state import PipelineState
 from graphs.newsletter_graph import create_newsletter_graph
 from agents.composer import save_newsletter
 from utils.logger import get_logger
+from utils.user_loader import load_user_profile
 
 logger = get_logger("orchestrator")
 
@@ -11,9 +12,13 @@ def main():
     start_time = time.time()
     logger.info("Starting AI Trend Intelligence Pipeline via LangGraph...")
     
+    # Load user profile for personalization
+    user_id = "manav"
+    user_profile = load_user_profile(user_id)
+    
     # Initialize the compiled LangGraph
     graph = create_newsletter_graph()
-    initial_state = PipelineState()
+    initial_state = PipelineState(user_profile=user_profile)
     
     # Export Graph Visualization
     try:
@@ -60,9 +65,17 @@ def main():
         logger.info(f"Total Articles Rejected: {final_state.metadata.total_articles_rejected}")
         logger.info(f"Prompt Tokens: {final_state.metadata.total_prompt_tokens}")
         logger.info(f"Completion Tokens: {final_state.metadata.total_completion_tokens}")
+        
+        # Print personalization stats
+        if final_state.metadata.generated_for_user:
+            logger.info(f"Personalization Stats:")
+            logger.info(f"  - Generated for User: {final_state.metadata.generated_for_user}")
+            logger.info(f"  - Personalization Boosts/Penalties Applied: {final_state.metadata.personalization_boosts_applied}")
+            
         logger.info(f"Saved newsletter to {output_path}")
     else:
         logger.error("Pipeline finished but no final newsletter was generated.")
 
 if __name__ == "__main__":
     main()
+

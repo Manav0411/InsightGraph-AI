@@ -15,6 +15,12 @@ def rank_articles(state: PipelineState) -> PipelineState:
     state.pipeline_stage = "ranking"
     logger.info("Ranking and scoring retrieved articles...")
     
+    user_profile = state.user_profile
+    boosts_applied_total = 0
+    if user_profile:
+        state.metadata.generated_for_user = user_profile.user_id
+        logger.info(f"Applying personalization boosts for user: {user_profile.user_id}")
+    
     for article in state.articles:
         score = 0.0
         source = article.source
@@ -43,8 +49,42 @@ def rank_articles(state: PipelineState) -> PipelineState:
         # Default baseline
         score += 1.0
         
+        # Personalization boost logic
+        p_boost = 0.0
+        if user_profile:
+            prefs = user_profile.preferences
+            # Preferred sources match (case-insensitive)
+            for pref_source in prefs.preferred_sources:
+                if pref_source.lower() == source.lower():
+                    p_boost += 2.0
+                    boosts_applied_total += 1
+                    logger.info(f"Article '{article.title}' matched preferred source '{pref_source}': +2.0 boost")
+            
+            # Preferred topics match (case-insensitive)
+            for pref_topic in prefs.preferred_topics:
+                pref_topic_lower = pref_topic.lower()
+                if pref_topic_lower in title or pref_topic_lower in content:
+                    p_boost += 3.0
+                    boosts_applied_total += 1
+                    logger.info(f"Article '{article.title}' matched preferred topic '{pref_topic}': +3.0 boost")
+            
+            # Excluded topics match (case-insensitive)
+            for excl_topic in prefs.excluded_topics:
+                excl_topic_lower = excl_topic.lower()
+                if excl_topic_lower in title or excl_topic_lower in content:
+                    p_boost -= 5.0
+                    boosts_applied_total += 1
+                    logger.info(f"Article '{article.title}' matched excluded topic '{excl_topic}': -5.0 penalty")
+
+        article.personalization_boost = round(p_boost, 1)
+        score += p_boost
+        
         # Cap score rounding
         article.trend_score = round(score, 1)
+        
+    if user_profile:
+        state.metadata.personalization_boosts_applied = boosts_applied_total
+        logger.info(f"Total personalization boosts/penalties applied: {boosts_applied_total}")
         
     # Sort articles by trend_score descending
     state.articles = sorted(state.articles, key=lambda x: x.trend_score, reverse=True)
@@ -60,3 +100,4 @@ def rank_articles(state: PipelineState) -> PipelineState:
     
     state.articles = top_articles
     return state
+

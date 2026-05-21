@@ -1,6 +1,7 @@
 from langgraph.graph import StateGraph, END
 from models.state import PipelineState
 from agents.retriever import retrieve_articles
+from agents.validator import validate_articles
 from agents.ranker import rank_articles
 from agents.analyzer import analyze_articles
 from agents.evaluator import evaluate_newsletter
@@ -54,8 +55,8 @@ def create_newsletter_graph():
     """
     workflow = StateGraph(PipelineState)
 
-    # Add all agent nodes
     workflow.add_node("retriever", retrieve_articles)
+    workflow.add_node("validator", validate_articles)
     workflow.add_node("ranker", rank_articles)
     workflow.add_node("analyzer", analyze_articles)
     workflow.add_node("evaluator", evaluate_newsletter)
@@ -65,7 +66,8 @@ def create_newsletter_graph():
     workflow.set_entry_point("retriever")
 
     # Define linear flow
-    workflow.add_edge("retriever", "ranker")
+    workflow.add_edge("retriever", "validator")
+    workflow.add_edge("validator", "ranker")
     workflow.add_edge("ranker", "analyzer")
     
     # Conditional routing after analyzer

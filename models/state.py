@@ -15,6 +15,7 @@ for all agent communication in the pipeline.
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime
+from models.user import UserProfile
 
 
 class Article(BaseModel):
@@ -40,6 +41,7 @@ class Article(BaseModel):
 
     # Ranking
     trend_score: float = 0.0
+    personalization_boost: float = 0.0
 
     # GitHub-specific metadata
     stars: Optional[int] = None
@@ -74,6 +76,12 @@ class PipelineMetadata(BaseModel):
 
     retrieval_sources: List[str] = Field(default_factory=list)
 
+    generated_for_user: Optional[str] = None
+    personalization_boosts_applied: int = 0
+
+    grounding_rejections: int = 0
+    validation_failures: int = 0
+
     generated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -99,3 +107,4 @@ class PipelineState(BaseModel):
     analyzer_retry_count: int = 0
     
     final_newsletter: Optional[str] = None
+    user_profile: Optional[UserProfile] = None

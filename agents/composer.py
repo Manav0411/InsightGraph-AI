@@ -21,8 +21,41 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
     tavily_articles = [a for a in articles if a.source == "tavily"]
     github_articles = [a for a in articles if a.source == "github"]
     
-    markdown_content = "# AI Trend Intelligence Digest\n\n"
+    markdown_content = "# AI Trend Intelligence Digest\n"
+    if state.user_profile:
+        email_str = f" ({state.user_profile.email})" if state.user_profile.email else ""
+        markdown_content += f"*Personalized for **{state.user_profile.user_id}**{email_str}*\n\n"
+    else:
+        markdown_content += "\n"
+        
+    # Recommended For You section (top 3 articles with personalization_boost > 0)
+    boosted_articles = [a for a in articles if getattr(a, "personalization_boost", 0.0) > 0.0]
+    boosted_articles = sorted(boosted_articles, key=lambda x: (x.personalization_boost, x.trend_score), reverse=True)
+    recommended_articles = boosted_articles[:3]
     
+    if recommended_articles:
+        markdown_content += "## Recommended For You\n\n"
+        for i, article in enumerate(recommended_articles, 1):
+            title = article.title
+            url = article.url
+            summary = article.summary or "No summary available."
+            why_it_matters = article.why_it_matters or "No analysis available."
+            source = article.source.capitalize()
+            trend_score = article.trend_score
+            boost = article.personalization_boost
+            tags = ", ".join(article.tags)
+            
+            stars_part = f" (⭐ {article.stars})" if (article.source == "github" and article.stars) else ""
+            
+            markdown_content += f"### {i}. [{title}]({url}){stars_part}\n"
+            markdown_content += f"**Trend Score:** {trend_score} *(Personalization Boost: +{boost})*\n"
+            markdown_content += f"**Source:** {source}\n"
+            if tags:
+                markdown_content += f"**Tags:** {tags}\n"
+            markdown_content += f"\n**Summary:** {summary}\n\n"
+            markdown_content += f"**Why it matters:** {why_it_matters}\n\n"
+            markdown_content += "---\n\n"
+            
     if tavily_articles:
         markdown_content += "## Top Stories\n\n"
         for i, article in enumerate(tavily_articles, 1):
@@ -71,6 +104,7 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
             
     state.final_newsletter = markdown_content
     return state
+
 
 def save_newsletter(markdown_content: str, filepath: str = "output/newsletter.md"):
     """
