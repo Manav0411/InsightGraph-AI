@@ -1,1 +1,2 @@
-# InsightGraph: Adaptive AI Intelligence Platform
+# InsightGraph
+## Adaptive AI Intelligence Platform
