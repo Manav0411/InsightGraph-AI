@@ -133,3 +133,16 @@ While we could use LLMs to validate the alignment between an article's title and
 
 ### Summary Grounding Evaluation
 The `Evaluator` was upgraded to check for "misaligned summaries". By cross-referencing the generated summary against the original article's title keywords, the Evaluator can automatically reject outputs where the LLM hallucinated entirely different topics. This ensures that what the user reads in the newsletter perfectly matches the cited source URL, preparing the system for production deployment and frontend user-trust.
+
+---
+
+## FastAPI Backend Layer
+
+### Preserving the Orchestration Core
+A common anti-pattern when wrapping AI workflows in an API is to mix HTTP routing logic with orchestration logic. To avoid this, we built the FastAPI layer as a **thin wrapper** around the existing LangGraph execution. The `backend/` directory handles HTTP request validation, JSON serialization, and route definitions, while all core logic remains safely encapsulated within `agents/` and `graphs/`. This ensures the AI pipeline can still be run via CLI or tested in isolation without spinning up a web server.
+
+### Strong API Contracts with Pydantic
+By defining strictly typed Pydantic models in `backend/schemas/`, the API provides clear, structured contracts (e.g., `NewsletterResponse`, `UserPreferencesUpdate`). This makes integration with a future frontend completely type-safe and automatically generates interactive OpenAPI documentation via `/docs`.
+
+### Preparing for Production Productization
+Transforming a local script into a REST API is the crucial bridge from "experiment" to "product". By exposing the pipeline over an HTTP POST endpoint (`/generate-newsletter`) and returning detailed execution telemetry alongside the generated markdown, we enable frontend applications to display loaders, show token usage metrics, and seamlessly integrate the AI intelligence pipeline into user-facing platforms.

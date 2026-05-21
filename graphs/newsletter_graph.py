@@ -51,7 +51,7 @@ def route_after_evaluation(state: PipelineState) -> str:
 
 def create_newsletter_graph():
     """
-    Compiles the adaptive, resilient AI Trend Intelligence pipeline into a LangGraph StateGraph.
+    Compiles the adaptive, resilient InsightGraph pipeline into a LangGraph StateGraph.
     """
     workflow = StateGraph(PipelineState)
 

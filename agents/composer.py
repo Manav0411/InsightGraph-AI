@@ -21,7 +21,7 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
     tavily_articles = [a for a in articles if a.source == "tavily"]
     github_articles = [a for a in articles if a.source == "github"]
     
-    markdown_content = "# AI Trend Intelligence Digest\n"
+    markdown_content = "# InsightGraph Digest\n> Adaptive AI Intelligence Platform\n\n"
     if state.user_profile:
         email_str = f" ({state.user_profile.email})" if state.user_profile.email else ""
         markdown_content += f"*Personalized for **{state.user_profile.user_id}**{email_str}*\n\n"

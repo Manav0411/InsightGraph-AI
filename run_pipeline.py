@@ -10,7 +10,7 @@ logger = get_logger("orchestrator")
 
 def main():
     start_time = time.time()
-    logger.info("Starting AI Trend Intelligence Pipeline via LangGraph...")
+    logger.info("Starting InsightGraph Pipeline via LangGraph...")
     
     # Load user profile for personalization
     user_id = "manav"

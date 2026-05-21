@@ -36,3 +36,22 @@ def load_user_profile(user_id: str) -> UserProfile:
             excluded_topics=["Robotics"]
         )
     )
+
+def save_user_profile(profile: UserProfile):
+    """
+    Persist a user profile to data/users/{user_id}.json.
+    """
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    users_dir = os.path.join(base_dir, "data", "users")
+    os.makedirs(users_dir, exist_ok=True)
+    
+    profile_path = os.path.join(users_dir, f"{profile.user_id}.json")
+    
+    try:
+        with open(profile_path, "w", encoding="utf-8") as f:
+            # model_dump_json serializes Pydantic to a JSON string
+            f.write(profile.model_dump_json(indent=4))
+        logger.info(f"Saved user profile for '{profile.user_id}' to {profile_path}")
+    except Exception as e:
+        logger.error(f"Error saving user profile to {profile_path}: {e}")
+

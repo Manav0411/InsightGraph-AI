@@ -1,1 +1,1 @@
-Multi-Agent AI Trend Intelligence System
+# InsightGraph: Adaptive AI Intelligence Platform
