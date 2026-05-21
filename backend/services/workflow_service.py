@@ -35,7 +35,8 @@ async def run_newsletter_workflow(user_id: str) -> NewsletterResponse:
     execution_time = round(end_time - start_time, 2)
     
     # 4. Extract data from final state
-    metadata = final_state.metadata
+    state_obj = PipelineState(**final_state)
+    metadata = state_obj.metadata
     
     metrics = {
         "recovery_attempts": metadata.recovery_attempts,
@@ -56,7 +57,7 @@ async def run_newsletter_workflow(user_id: str) -> NewsletterResponse:
     
     return NewsletterResponse(
         message="Newsletter generated successfully",
-        newsletter_content=final_state.final_newsletter or "Failed to generate newsletter.",
+        newsletter_content=state_obj.final_newsletter or "Failed to generate newsletter.",
         execution_time_seconds=execution_time,
         token_usage=token_usage,
         timings=metadata.agent_timings,

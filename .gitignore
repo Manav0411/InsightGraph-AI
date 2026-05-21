@@ -15,3 +15,17 @@ venv/
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+
+# Mac OS
+.DS_Store
+
+# User data
+data/users/*.json
+!data/users/.gitkeep
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
