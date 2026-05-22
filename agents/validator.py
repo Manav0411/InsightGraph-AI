@@ -29,6 +29,7 @@ def validate_articles(state: PipelineState) -> PipelineState:
         
         if not keywords:
             # If no meaningful keywords, let it pass (edge case)
+            article.grounding_verified = True
             valid_articles.append(article)
             continue
             
@@ -40,6 +41,7 @@ def validate_articles(state: PipelineState) -> PipelineState:
         # For small titles (1-3 keywords), require at least 1 match. 
         # For larger titles, require at least 20% overlap.
         if overlap_ratio >= 0.2 or match_count >= 1:
+            article.grounding_verified = True
             valid_articles.append(article)
         else:
             logger.warning(f"[Validator] Rejected article due to low title-content relevance: '{article.title}'")

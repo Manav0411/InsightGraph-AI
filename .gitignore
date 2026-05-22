@@ -29,3 +29,13 @@ data/users/*.json
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Runtime Data
+data/runtime/
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/node_modules/
+frontend/.env*.local

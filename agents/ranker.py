@@ -58,6 +58,7 @@ def rank_articles(state: PipelineState) -> PipelineState:
                 if pref_source.lower() == source.lower():
                     p_boost += 2.0
                     boosts_applied_total += 1
+                    article.recommendation_reasons.append(f"Preferred source: {pref_source} (+2.0)")
                     logger.info(f"Article '{article.title}' matched preferred source '{pref_source}': +2.0 boost")
             
             # Preferred topics match (case-insensitive)
@@ -66,6 +67,7 @@ def rank_articles(state: PipelineState) -> PipelineState:
                 if pref_topic_lower in title or pref_topic_lower in content:
                     p_boost += 3.0
                     boosts_applied_total += 1
+                    article.recommendation_reasons.append(f"Matches preferred topic: {pref_topic} (+3.0)")
                     logger.info(f"Article '{article.title}' matched preferred topic '{pref_topic}': +3.0 boost")
             
             # Excluded topics match (case-insensitive)
@@ -74,6 +76,7 @@ def rank_articles(state: PipelineState) -> PipelineState:
                 if excl_topic_lower in title or excl_topic_lower in content:
                     p_boost -= 5.0
                     boosts_applied_total += 1
+                    article.recommendation_reasons.append(f"Matches excluded topic: {excl_topic} (-5.0)")
                     logger.info(f"Article '{article.title}' matched excluded topic '{excl_topic}': -5.0 penalty")
 
         article.personalization_boost = round(p_boost, 1)

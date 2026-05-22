@@ -46,6 +46,10 @@ class Article(BaseModel):
     # GitHub-specific metadata
     stars: Optional[int] = None
 
+    # Trust & Explainability
+    recommendation_reasons: List[str] = Field(default_factory=list)
+    grounding_verified: bool = False
+
     # Tracking metadata
     retrieved_at: datetime = Field(default_factory=datetime.utcnow)
 
