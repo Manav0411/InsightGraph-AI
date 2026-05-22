@@ -2,45 +2,36 @@
 
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../lib/config';
+import { useUser } from '../../context/UserContext';
 
 export default function Preferences() {
+  const { preferences, updatePreferences, loading: contextLoading } = useUser();
   const [topics, setTopics] = useState([]);
   const [exclusions, setExclusions] = useState([]);
   const [sources, setSources] = useState([]);
+  const [newTopic, setNewTopic] = useState('');
+  const [newExclusion, setNewExclusion] = useState('');
+  const [newSource, setNewSource] = useState('');
+  const [isAddingTopic, setIsAddingTopic] = useState(false);
+  const [isAddingSource, setIsAddingSource] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchPreferences();
-  }, []);
-
-  const fetchPreferences = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/users/default_user`);
-      if (res.ok) {
-        const json = await res.json();
-        setTopics(json.profile?.preferences?.preferred_topics || []);
-        setExclusions(json.profile?.preferences?.excluded_topics || []);
-        setSources(json.profile?.preferences?.preferred_sources || []);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+    if (preferences) {
+      setTopics(preferences.preferred_topics || []);
+      setExclusions(preferences.excluded_topics || []);
+      setSources(preferences.preferred_sources || []);
     }
-  };
+  }, [preferences]);
 
   const savePreferences = async () => {
     setSaving(true);
     try {
-      await fetch(`${API_BASE_URL}/users/default_user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          preferred_topics: topics,
-          excluded_topics: exclusions,
-          preferred_sources: sources
-        })
+      await updatePreferences({
+        preferred_topics: topics,
+        excluded_topics: exclusions,
+        preferred_sources: sources
       });
     } catch (err) {
       console.error(err);
@@ -61,7 +52,30 @@ export default function Preferences() {
     setSources(sources.filter((_, i) => i !== index));
   };
 
-  if (loading) return <div className="p-8">Loading Preferences...</div>;
+  const addTopic = (e) => {
+    if (e.key === 'Enter' && newTopic.trim()) {
+      if (!topics.includes(newTopic.trim())) setTopics([...topics, newTopic.trim()]);
+      setNewTopic('');
+      setIsAddingTopic(false);
+    }
+  };
+
+  const addExclusion = (e) => {
+    if (e.key === 'Enter' && newExclusion.trim()) {
+      if (!exclusions.includes(newExclusion.trim())) setExclusions([...exclusions, newExclusion.trim()]);
+      setNewExclusion('');
+    }
+  };
+
+  const addSource = (e) => {
+    if (e.key === 'Enter' && newSource.trim()) {
+      if (!sources.includes(newSource.trim())) setSources([...sources, newSource.trim()]);
+      setNewSource('');
+      setIsAddingSource(false);
+    }
+  };
+
+  if (contextLoading) return <div className="p-8">Loading Preferences...</div>;
 
   return (
     <div className="w-full max-w-6xl space-y-8 mx-auto">
@@ -91,9 +105,22 @@ export default function Preferences() {
               </h3>
               <p className="text-on-surface-variant text-sm mt-1">Define the thematic pillars of your intelligence feed.</p>
             </div>
-            <button className="text-sm font-semibold text-primary hover:bg-primary/10 px-4 py-2 rounded-lg transition-colors flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">add</span> Add Topic
-            </button>
+            {isAddingTopic ? (
+              <input 
+                autoFocus
+                type="text" 
+                value={newTopic}
+                onChange={e => setNewTopic(e.target.value)}
+                onKeyDown={addTopic}
+                onBlur={() => setIsAddingTopic(false)}
+                className="text-sm font-semibold text-on-surface bg-surface border border-primary focus:outline-none px-4 py-2 rounded-lg"
+                placeholder="Type and press Enter..."
+              />
+            ) : (
+              <button onClick={() => setIsAddingTopic(true)} className="text-sm font-semibold text-primary hover:bg-primary/10 px-4 py-2 rounded-lg transition-colors flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">add</span> Add Topic
+              </button>
+            )}
           </div>
           
           <div className="flex flex-wrap gap-3 mt-auto">
@@ -121,7 +148,14 @@ export default function Preferences() {
           </div>
           <div className="relative w-full mb-4">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-            <input className="w-full bg-surface border border-outline-variant/50 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-outline/70" placeholder="Add an exclusion..." type="text"/>
+            <input 
+              className="w-full bg-surface border border-outline-variant/50 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-outline/70" 
+              placeholder="Add an exclusion... (press Enter)" 
+              type="text"
+              value={newExclusion}
+              onChange={e => setNewExclusion(e.target.value)}
+              onKeyDown={addExclusion}
+            />
           </div>
           <div className="flex flex-wrap gap-2 overflow-y-auto max-h-32 pr-2">
             {exclusions.map((exclusion, i) => (
@@ -162,9 +196,22 @@ export default function Preferences() {
               </div>
             ))}
           </div>
-          <button className="w-full mt-6 py-2.5 text-sm font-semibold text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors border border-primary/10 flex justify-center items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">manage_search</span> Manage Directory
-          </button>
+          {isAddingSource ? (
+            <input 
+              autoFocus
+              type="text" 
+              value={newSource}
+              onChange={e => setNewSource(e.target.value)}
+              onKeyDown={addSource}
+              onBlur={() => setIsAddingSource(false)}
+              className="w-full mt-6 py-2.5 px-4 text-sm font-semibold text-on-surface bg-surface border border-primary focus:outline-none rounded-lg"
+              placeholder="Type domain (e.g. github) and press Enter..."
+            />
+          ) : (
+            <button onClick={() => setIsAddingSource(true)} className="w-full mt-6 py-2.5 text-sm font-semibold text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors border border-primary/10 flex justify-center items-center gap-2">
+              <span className="material-symbols-outlined text-[18px]">manage_search</span> Manage Directory
+            </button>
+          )}
         </div>
 
         {/* Behavioral Tuning Card (Spans 2 columns) */}

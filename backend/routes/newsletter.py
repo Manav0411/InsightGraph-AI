@@ -14,19 +14,19 @@ async def generate_newsletter(request: NewsletterRequest):
     This is a long-running synchronous task.
     """
     try:
-        response = await run_newsletter_workflow(request.user_id)
+        response = await run_newsletter_workflow(request)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
 
-from utils.runtime_store import load_last_run
+from utils.runtime_store import load_last_newsletter
 
 @router.get("/latest", response_model=NewsletterResponse)
 async def get_latest_newsletter():
     """
     Returns the most recently generated newsletter from the runtime store.
     """
-    data = load_last_run()
+    data = load_last_newsletter()
     if not data:
         raise HTTPException(status_code=404, detail="No newsletters have been generated yet.")
     return data
@@ -55,7 +55,7 @@ async def generate_newsletter_stream(request: NewsletterRequest):
         
         try:
             # Run the actual workflow at the end to generate the final artifact
-            response = await run_newsletter_workflow(request.user_id)
+            response = await run_newsletter_workflow(request)
             yield f"data: {{\"stage\": \"Done\", \"status\": \"completed\", \"result\": \"success\"}}\\n\\n"
         except Exception as e:
             yield f"data: {{\"stage\": \"Error\", \"status\": \"failed\", \"error\": \"{str(e)}\"}}\\n\\n"

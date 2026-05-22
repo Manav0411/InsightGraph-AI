@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import PipelineProgress from '../components/orchestration/PipelineProgress';
 import { API_BASE_URL } from '../lib/config';
+import { useUser } from '../context/UserContext';
 
 export default function CommandCenter() {
+  const { user, preferences } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -40,11 +42,22 @@ export default function CommandCenter() {
     }, 100);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s global timeout for stream
+
       const response = await fetch(`${API_BASE_URL}/newsletter/generate-stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: 'default_user' })
+        signal: controller.signal,
+        body: JSON.stringify({ 
+          user_id: user.id,
+          preferred_topics: preferences?.preferred_topics || [],
+          preferred_sources: preferences?.preferred_sources || [],
+          excluded_topics: preferences?.excluded_topics || []
+        })
       });
+      
+      clearTimeout(timeoutId);
       
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
@@ -94,7 +107,13 @@ export default function CommandCenter() {
     } catch (error) {
       console.error('SSE Error:', error);
       clearInterval(timerInterval);
-      setIsGenerating(false);
+      
+      const errorMsg = error.name === 'AbortError' ? 'Stream timed out' : 'Network error';
+      currentLogs = [...currentLogs, `[SYS] ERROR: ${errorMsg}. Signal synthesis interrupted.`].slice(-4);
+      setGenerateProgress(prev => ({ ...prev, stage: 'Failed', log: currentLogs }));
+      
+      // Let user read the error before resetting
+      setTimeout(() => setIsGenerating(false), 5000);
     }
   };
 

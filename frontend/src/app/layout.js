@@ -1,5 +1,6 @@
 import "./globals.css";
 import NavLinks from "../components/NavLinks";
+import { UserProvider } from "../context/UserContext";
 
 export const metadata = {
   title: "InsightGraph - Intelligence Command Center",
@@ -14,7 +15,8 @@ export default function RootLayout({ children }) {
       </head>
       <body className="bg-surface text-on-surface antialiased min-h-screen flex flex-col">
         {/* TopNavBar */}
-        <nav className="font-body leading-relaxed fixed top-0 w-full z-50 bg-surface-container-low border-b border-outline-variant/20 shadow-sm transition-all duration-300 ease-in-out">
+        <UserProvider>
+          <nav className="font-body leading-relaxed fixed top-0 w-full z-50 bg-surface-container-low border-b border-outline-variant/20 shadow-sm transition-all duration-300 ease-in-out">
           <div className="flex justify-between items-center px-8 h-16 w-full max-w-7xl mx-auto">
             <div className="flex items-center gap-8">
               <div className="font-headline text-2xl font-bold text-primary">InsightGraph</div>
@@ -42,6 +44,7 @@ export default function RootLayout({ children }) {
             {children}
           </main>
         </div>
+        </UserProvider>
       </body>
     </html>
   );

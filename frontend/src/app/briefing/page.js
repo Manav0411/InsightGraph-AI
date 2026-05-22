@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../lib/config';
+import { useUser } from '../../context/UserContext';
 
 export default function Briefing() {
+  const { user, preferences } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -34,11 +36,22 @@ export default function Briefing() {
     setOrchestrationStages([]);
     
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s global timeout
+
       const response = await fetch(`${API_BASE_URL}/newsletter/generate-stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: "default_user", topic: "General Intelligence" })
+        signal: controller.signal,
+        body: JSON.stringify({ 
+          user_id: user.id,
+          preferred_topics: preferences?.preferred_topics || [],
+          preferred_sources: preferences?.preferred_sources || [],
+          excluded_topics: preferences?.excluded_topics || []
+        })
       });
+      
+      clearTimeout(timeoutId);
       
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -78,7 +91,14 @@ export default function Briefing() {
       }
     } catch (e) {
       console.error("Generation failed", e);
-      setIsGenerating(false);
+      const errorMsg = e.name === 'AbortError' ? 'Stream timed out' : 'Network error';
+      setOrchestrationStages(prev => [
+        ...prev, 
+        { stage: 'Error', status: 'failed', error: `${errorMsg}. Signal synthesis interrupted. Retry orchestration?` }
+      ]);
+      setTimeout(() => {
+        setIsGenerating(false);
+      }, 5000);
     }
   };
 

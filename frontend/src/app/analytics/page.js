@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../lib/config';
+import { useUser } from '../../context/UserContext';
 
 export default function Analytics() {
+  const { user } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +15,7 @@ export default function Analytics() {
 
   const fetchLatest = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/newsletter/latest`);
+      const res = await fetch(`${API_BASE_URL}/metrics`);
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -27,9 +29,9 @@ export default function Analytics() {
 
   if (loading) return <div className="p-8">Loading Analytics...</div>;
 
-  const metrics = data?.metrics || {};
+  const metrics = data || {};
   const trustMetrics = data?.trust_metrics || { grounding_reliability_pct: 0, validation_success_rate: 0 };
-  const tokens = data?.token_usage || { prompt_tokens: 0, completion_tokens: 0 };
+  const tokens = { prompt_tokens: data?.total_prompt_tokens || 0, completion_tokens: data?.total_completion_tokens || 0 };
   const totalTokens = (tokens.prompt_tokens + tokens.completion_tokens).toLocaleString();
   const timings = data?.timings || {};
 

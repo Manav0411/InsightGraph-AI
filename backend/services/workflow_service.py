@@ -8,16 +8,27 @@ from utils.runtime_store import save_last_run
 
 logger = logging.getLogger("api_workflow")
 
-async def run_newsletter_workflow(user_id: str) -> NewsletterResponse:
+from backend.schemas.requests import NewsletterRequest
+
+async def run_newsletter_workflow(request: NewsletterRequest) -> NewsletterResponse:
     """
     Wraps the LangGraph orchestration.
     Runs the pipeline synchronously since LangGraph execution blocks,
     but provides an async interface for the FastAPI route.
     """
+    user_id = request.user_id
     logger.info(f"[API] Newsletter generation requested for user: {user_id}")
     
     # 1. Load User Profile
     user_profile = load_user_profile(user_id)
+    
+    # Override with real-time preferences from request if present
+    if request.preferred_topics is not None:
+        user_profile.preferences.preferred_topics = request.preferred_topics
+    if request.preferred_sources is not None:
+        user_profile.preferences.preferred_sources = request.preferred_sources
+    if request.excluded_topics is not None:
+        user_profile.preferences.excluded_topics = request.excluded_topics
     
     # 2. Initialize State
     initial_state = PipelineState(

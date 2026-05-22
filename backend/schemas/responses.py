@@ -46,3 +46,5 @@ class MetricsResponse(BaseModel):
     personalization_boosts_applied: int
     total_articles_processed: int
     total_articles_rejected: int
+    timings: Dict[str, float] = {}
+    trust_metrics: Optional[TrustMetrics] = None

@@ -3,6 +3,9 @@ from typing import List, Optional
 
 class NewsletterRequest(BaseModel):
     user_id: str
+    preferred_topics: Optional[List[str]] = None
+    preferred_sources: Optional[List[str]] = None
+    excluded_topics: Optional[List[str]] = None
 
 class UserPreferencesUpdate(BaseModel):
     preferred_topics: Optional[List[str]] = None
