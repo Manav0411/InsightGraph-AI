@@ -1,6 +1,8 @@
 import "./globals.css";
 import NavLinks from "../components/NavLinks";
 import { UserProvider } from "../context/UserContext";
+import { ThemeProvider } from "../components/ThemeProvider";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export const metadata = {
   title: "InsightGraph - Intelligence Command Center",
@@ -9,14 +11,14 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="light">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
       </head>
-      <body className="bg-surface text-on-surface antialiased min-h-screen flex flex-col">
-        {/* TopNavBar */}
-        <UserProvider>
-          <nav className="font-body leading-relaxed fixed top-0 w-full z-50 bg-surface-container-low border-b border-outline-variant/20 shadow-sm transition-all duration-300 ease-in-out">
+      <body className="bg-surface text-on-surface antialiased min-h-screen flex flex-col transition-colors duration-300">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <UserProvider>
+            <nav className="font-body leading-relaxed fixed top-0 w-full z-50 bg-surface-container-low border-b border-outline-variant/20 shadow-sm transition-all duration-300 ease-in-out">
           <div className="flex justify-between items-center px-8 h-16 w-full max-w-7xl mx-auto">
             <div className="flex items-center gap-8">
               <div className="font-headline text-2xl font-bold text-primary">InsightGraph</div>
@@ -28,6 +30,7 @@ export default function RootLayout({ children }) {
                   <span className="material-symbols-outlined" data-icon="settings">settings</span>
                 </a>
               </div>
+              <ThemeToggle />
               <button className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
                 <span className="material-symbols-outlined" data-icon="notifications">notifications</span>
               </button>
@@ -45,6 +48,7 @@ export default function RootLayout({ children }) {
           </main>
         </div>
         </UserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -9,6 +9,7 @@ export default function NavLinks() {
   const links = [
     { name: 'Dashboard', href: '/' },
     { name: 'Intelligence Briefings', href: '/briefing' },
+    { name: 'History', href: '/history' },
     { name: 'Analytics', href: '/analytics' },
   ];
 

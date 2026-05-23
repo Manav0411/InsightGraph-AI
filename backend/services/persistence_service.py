@@ -102,9 +102,17 @@ def save_briefing(db: Session, user_id: str, response: NewsletterResponse) -> Br
     normalized_trend = min(avg_trend * 5, 100.0)
     sqi = round((grounding * 0.4) + (validation * 0.3) + (normalized_trend * 0.3), 1)
 
+    # Generate dynamic title
+    if dominant_topics:
+        top_two = dominant_topics[:2]
+        title_suffix = " & ".join(top_two)
+        dynamic_title = f"InsightGraph Digest: {title_suffix}"
+    else:
+        dynamic_title = "InsightGraph Digest"
+
     db_briefing = Briefing(
         user_id=user_id,
-        title="InsightGraph Digest",
+        title=dynamic_title,
         execution_time_seconds=response.execution_time_seconds,
         prompt_tokens=response.token_usage.get("prompt_tokens", 0),
         completion_tokens=response.token_usage.get("completion_tokens", 0),
@@ -165,7 +173,7 @@ def fetch_longitudinal_analytics(db: Session, user_id: str, limit: int = 20):
     all_sources = []
     
     for b in briefings:
-        date_str = b.created_at.strftime("%b %d %H:%M")
+        date_str = b.created_at.isoformat() + "Z"
         token_trends.append({"date": date_str, "prompt": b.prompt_tokens, "completion": b.completion_tokens})
         latency_trends.append({"date": date_str, "latency": b.execution_time_seconds, "sqi": b.signal_quality_index})
         

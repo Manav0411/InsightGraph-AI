@@ -16,6 +16,20 @@ export default function Analytics() {
         const res = await fetch(`${API_BASE_URL}/analytics/trends?user_id=${user.id}`);
         if (res.ok) {
           const json = await res.json();
+          
+          // Convert ISO UTC strings to localized short strings for chart axes
+          const formatChartDate = (isoString) => {
+            const d = new Date(isoString);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          };
+          
+          if (json.latency_trends) {
+            json.latency_trends.forEach(item => item.date = formatChartDate(item.date));
+          }
+          if (json.token_trends) {
+            json.token_trends.forEach(item => item.date = formatChartDate(item.date));
+          }
+          
           setTrendsData(json);
         }
       } catch (err) {
@@ -91,18 +105,18 @@ export default function Analytics() {
                 <AreaChart data={latency_trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorSqi" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--md-sys-color-primary)" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="var(--md-sys-color-primary)" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="rgb(var(--color-primary))" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="rgb(var(--color-primary))" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--md-sys-color-outline-variant)" opacity={0.3} />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'var(--md-sys-color-on-surface-variant)', fontSize: 12}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--md-sys-color-on-surface-variant)', fontSize: 12}} domain={[0, 100]} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgb(var(--color-outline-variant))" opacity={0.3} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'rgb(var(--color-on-surface-variant))', fontSize: 12}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: 'rgb(var(--color-on-surface-variant))', fontSize: 12}} domain={[0, 100]} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--md-sys-color-surface-container-high)', borderRadius: '12px', border: 'none', color: 'var(--md-sys-color-on-surface)', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
-                    itemStyle={{ color: 'var(--md-sys-color-primary)', fontWeight: 'bold' }}
+                    contentStyle={{ backgroundColor: 'rgb(var(--color-surface-container-high))', borderRadius: '12px', border: 'none', color: 'rgb(var(--color-on-surface))', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                    itemStyle={{ color: 'rgb(var(--color-primary))', fontWeight: 'bold' }}
                   />
-                  <Area type="monotone" dataKey="sqi" name="Signal Quality" stroke="var(--md-sys-color-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorSqi)" />
+                  <Area type="monotone" dataKey="sqi" name="Signal Quality" stroke="rgb(var(--color-primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorSqi)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -152,16 +166,16 @@ export default function Analytics() {
                 <AreaChart data={token_trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                    <defs>
                     <linearGradient id="colorPrompt" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--md-sys-color-secondary)" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="var(--md-sys-color-secondary)" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="rgb(var(--color-secondary))" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="rgb(var(--color-secondary))" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--md-sys-color-outline-variant)" opacity={0.2} />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'var(--md-sys-color-on-surface-variant)', fontSize: 10}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--md-sys-color-on-surface-variant)', fontSize: 10}} />
-                  <Tooltip contentStyle={{ backgroundColor: 'var(--md-sys-color-surface-container-high)', borderRadius: '8px', border: 'none', color: 'var(--md-sys-color-on-surface)' }}/>
-                  <Area type="monotone" dataKey="prompt" stackId="1" name="Prompt Tokens" stroke="var(--md-sys-color-secondary)" fill="url(#colorPrompt)" />
-                  <Area type="monotone" dataKey="completion" stackId="1" name="Completion Tokens" stroke="var(--md-sys-color-tertiary)" fill="var(--md-sys-color-tertiary-container)" opacity={0.8} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgb(var(--color-outline-variant))" opacity={0.2} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'rgb(var(--color-on-surface-variant))', fontSize: 10}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: 'rgb(var(--color-on-surface-variant))', fontSize: 10}} />
+                  <Tooltip contentStyle={{ backgroundColor: 'rgb(var(--color-surface-container-high))', borderRadius: '8px', border: 'none', color: 'rgb(var(--color-on-surface))' }}/>
+                  <Area type="monotone" dataKey="prompt" stackId="1" name="Prompt Tokens" stroke="rgb(var(--color-secondary))" fill="url(#colorPrompt)" />
+                  <Area type="monotone" dataKey="completion" stackId="1" name="Completion Tokens" stroke="rgb(var(--color-tertiary))" fill="rgb(var(--color-tertiary-container))" opacity={0.8} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -172,11 +186,11 @@ export default function Analytics() {
             <div style={{ width: '100%', height: 192 }}>
               <ResponsiveContainer width="99%" height={192}>
                 <LineChart data={latency_trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--md-sys-color-outline-variant)" opacity={0.2} />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'var(--md-sys-color-on-surface-variant)', fontSize: 10}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--md-sys-color-on-surface-variant)', fontSize: 10}} />
-                  <Tooltip contentStyle={{ backgroundColor: 'var(--md-sys-color-surface-container-high)', borderRadius: '8px', border: 'none', color: 'var(--md-sys-color-on-surface)' }}/>
-                  <Line type="monotone" dataKey="latency" name="Latency (s)" stroke="var(--md-sys-color-error)" strokeWidth={2} dot={{r: 4, fill: 'var(--md-sys-color-error)'}} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgb(var(--color-outline-variant))" opacity={0.2} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'rgb(var(--color-on-surface-variant))', fontSize: 10}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: 'rgb(var(--color-on-surface-variant))', fontSize: 10}} />
+                  <Tooltip contentStyle={{ backgroundColor: 'rgb(var(--color-surface-container-high))', borderRadius: '8px', border: 'none', color: 'rgb(var(--color-on-surface))' }}/>
+                  <Line type="monotone" dataKey="latency" name="Latency (s)" stroke="rgb(var(--color-error))" strokeWidth={2} dot={{r: 4, fill: 'rgb(var(--color-error))'}} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
