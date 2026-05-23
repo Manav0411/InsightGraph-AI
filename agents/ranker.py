@@ -32,17 +32,7 @@ def rank_articles(state: PipelineState) -> PipelineState:
             stars = article.stars or 0
             score += stars / 1000.0
             
-        # Title keywords heuristics
-        if "agent" in title:
-            score += 5.0
-        if "llm" in title:
-            score += 3.0
-        if "generative" in title:
-            score += 2.0
-            
-        # Content keywords heuristics
-        if "open source" in content or "open-source" in content:
-            score += 2.0
+        # Content keywords heuristics (generic quality markers)
         if "breakthrough" in content or "state-of-the-art" in content or "sota" in content:
             score += 2.0
             

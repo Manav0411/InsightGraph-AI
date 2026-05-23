@@ -38,9 +38,12 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     
     all_articles_raw = []
     
+    # Use the user's preferred topics if defined
+    user_topics = state.user_profile.preferences.preferred_topics if state.user_profile.preferences.preferred_topics else None
+
     # 1. Fetch from Tavily Service
     try:
-        tavily_articles = fetch_ai_news(max_results=tavily_max)
+        tavily_articles = fetch_ai_news(queries=user_topics, max_results=tavily_max)
         all_articles_raw.extend(tavily_articles)
         if tavily_articles and "tavily" not in state.metadata.retrieval_sources:
             state.metadata.retrieval_sources.append("tavily")
@@ -50,7 +53,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
         
     # 2. GitHub Integration
     try:
-        github_articles = fetch_github_trends(max_results=github_max)
+        github_articles = fetch_github_trends(max_results=github_max, topics=user_topics)
         all_articles_raw.extend(github_articles)
         if github_articles and "github" not in state.metadata.retrieval_sources:
             state.metadata.retrieval_sources.append("github")

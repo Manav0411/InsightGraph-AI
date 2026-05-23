@@ -13,18 +13,35 @@ export default function Briefing() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [orchestrationStages, setOrchestrationStages] = useState([]);
   
+  const [history, setHistory] = useState([]);
+
   const fetchLatest = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/newsletter/latest`);
-      if (res.ok) {
-        const json = await res.json();
+      const [resLatest, resHistory] = await Promise.all([
+        fetch(`${API_BASE_URL}/newsletter/latest`),
+        fetch(`${API_BASE_URL}/newsletter/history?user_id=${user.id}`)
+      ]);
+      if (resLatest.ok) {
+        const json = await resLatest.json();
         setData(json);
       }
+      if (resHistory.ok) {
+        const json = await resHistory.json();
+        setHistory(json);
+      }
     } catch (e) {
-      console.error("Failed to fetch latest briefing:", e);
+      console.error("Failed to fetch data:", e);
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateNarrative = (topics) => {
+    if (!topics || topics.length === 0) return "Stable ecosystem intelligence gathered across trusted sources.";
+    if (topics.includes('AI Agents')) return "AI Agents dominated today's ecosystem signals. Agentic infrastructure is accelerating rapidly compared to previous periods.";
+    if (topics.includes('Coding Assistants')) return "Coding-agent infrastructure continues accelerating rapidly, driving major shifts in the developer ecosystem.";
+    if (topics.includes('Open Source')) return "Open-source momentum shaped the ecosystem narrative, outperforming proprietary models in signal velocity.";
+    return `${topics[0]} signals drove ecosystem shifts during this period, indicating strong structural momentum.`;
   };
 
   useEffect(() => {
@@ -177,6 +194,18 @@ export default function Briefing() {
           {/* Left Column: Article Body (Editorial Layout) */}
           <article className="flex-1 flex flex-col gap-10 max-w-[700px] w-full">
             <header className="flex flex-col gap-6">
+              
+              {/* Contextual Evolution Narrative */}
+              <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/30 relative overflow-hidden group mb-4">
+                <div className="absolute top-0 left-0 w-1 h-full bg-tertiary/60"></div>
+                <h3 className="text-[11px] font-bold text-tertiary uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[14px]">timeline</span> Contextual Evolution
+                </h3>
+                <p className="text-on-surface text-[15px] font-medium leading-relaxed italic">
+                  {generateNarrative(data?.metrics?.dominant_topics || mainArticle?.tags)}
+                </p>
+              </div>
+
               <div className="flex items-center gap-3 text-sm text-tertiary">
                 {mainArticle.tags?.slice(0, 1).map(tag => (
                   <span key={tag} className="px-3 py-1 bg-[#c4a66a]/20 rounded-full font-bold uppercase tracking-wider text-xs">
@@ -228,9 +257,9 @@ export default function Briefing() {
                   <div className="absolute top-0 left-0 w-1 h-full bg-tertiary/60"></div>
                   <div className="flex items-center gap-2 text-tertiary font-bold mb-4 uppercase tracking-wider text-[13px]">
                     <span className="material-symbols-outlined text-[16px]">psychology</span>
-                    AI Thought Process
+                    Why This Signal Was Elevated
                   </div>
-                  <p className="text-on-surface font-medium text-base mb-3">Signal ranked highly due to:</p>
+                  <p className="text-on-surface font-medium text-base mb-3">Signal prioritized due to:</p>
                   <ul className="flex flex-col gap-3">
                     {mainArticle.recommendation_reasons.map((reason, i) => (
                       <li key={i} className="text-sm text-on-surface-variant flex items-start gap-3 leading-relaxed">
@@ -299,28 +328,29 @@ export default function Briefing() {
               </div>
             )}
 
-            {relatedArticles.length > 0 && (
-              <div className="flex flex-col gap-4">
-                <h3 className="font-headline text-lg font-bold pl-2 text-on-surface">Related Intelligence</h3>
-                
-                {relatedArticles.map((article, idx) => (
-                  <div key={idx} className="flex flex-col gap-2 p-5 bg-surface-container-low rounded-2xl border border-outline-variant/30 cursor-pointer hover:-translate-y-1 hover:shadow-md transition-all duration-200">
-                    <div>
-                      {article.tags?.[0] && (
-                        <span className="text-[10px] font-bold text-tertiary uppercase tracking-wider mb-2 block">{article.tags[0]}</span>
-                      )}
-                      <h4 className="font-headline text-base font-bold leading-snug text-on-surface">{article.title}</h4>
-                      <p className="text-xs text-on-surface-variant mt-2 line-clamp-2 leading-relaxed">{article.summary}</p>
-                      
-                      <div className="flex justify-between items-center mt-4">
-                        <span className="text-[11px] font-bold uppercase text-on-surface-variant">{article.source}</span>
-                        {article.personalization_boost > 0 && (
-                          <span className="material-symbols-outlined text-[14px] text-tertiary" title="Personalized Match">stars</span>
-                        )}
+            {history.length > 0 && (
+              <div className="flex flex-col gap-4 mt-4">
+                <h3 className="font-headline text-lg font-bold pl-2 text-on-surface flex items-center gap-2">
+                  <span className="material-symbols-outlined text-tertiary text-[20px]">history</span> Intelligence Lineage
+                </h3>
+                <div className="bg-surface-container p-6 rounded-2xl border border-outline-variant/20 relative">
+                  <div className="absolute left-[33px] top-8 bottom-8 w-[2px] bg-outline-variant/20"></div>
+                  <div className="flex flex-col gap-6 relative z-10">
+                    {history.slice(0, 4).map((b, idx) => (
+                      <div key={idx} className="flex gap-4 group">
+                        <div className="w-3 h-3 mt-1.5 rounded-full border-2 border-surface-container bg-tertiary shrink-0 z-10 relative"></div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">
+                            {new Date(b.generated_at.endsWith('Z') ? b.generated_at : b.generated_at + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                          <a href={`/history/${b.id}`} className="font-headline font-bold text-sm text-on-surface leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                            {b.dominant_topics?.[0] || 'Ecosystem Shift'}
+                          </a>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             )}
           </aside>

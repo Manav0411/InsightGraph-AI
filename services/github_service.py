@@ -2,7 +2,7 @@ import requests
 import datetime
 from typing import List, Dict, Any
 
-def fetch_github_trends(max_results: int = 10) -> List[Dict[str, Any]]:
+def fetch_github_trends(max_results: int = 10, topics: List[str] = None) -> List[Dict[str, Any]]:
     """
     Fetches trending open-source AI repositories from GitHub.
     Uses the GitHub Search API to find repositories created recently
@@ -14,7 +14,12 @@ def fetch_github_trends(max_results: int = 10) -> List[Dict[str, Any]]:
     recent_date = (datetime.datetime.now() - datetime.timedelta(days=14)).strftime('%Y-%m-%d')
     
     # Query for AI related topics created recently, sorted by stars
-    query = f"AI OR LLM OR Agent OR Generative created:>{recent_date}"
+    if topics:
+        topic_query = " OR ".join(f'"{t}"' for t in topics)
+        query = f"{topic_query} created:>{recent_date}"
+    else:
+        query = f"AI OR LLM OR Agent OR Generative created:>{recent_date}"
+        
     url = f"https://api.github.com/search/repositories?q={query}&sort=stars&order=desc"
     
     headers = {

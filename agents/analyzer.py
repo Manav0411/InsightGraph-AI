@@ -17,7 +17,7 @@ logger = get_logger("analyzer")
 class ArticleAnalysis(BaseModel):
     summary: str = Field(description="A concise summary of the article (maximum 2-3 sentences). Avoid repetitive phrasing.")
     why_it_matters: str = Field(description="Why this news is important for the AI industry. Be concise and high-signal.")
-    tags: List[str] = Field(description="A list of 2-4 topic tags (e.g., 'AI Agents', 'Open Source', 'LLMs', 'Cybersecurity').")
+    tags: List[str] = Field(description="A list of 2-4 topic tags (e.g., 'Model Architecture', 'Funding', 'Regulation', 'Cybersecurity').")
 
 def analyze_articles(state: PipelineState) -> PipelineState:
     """

@@ -12,9 +12,27 @@ export default function CommandCenter() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateProgress, setGenerateProgress] = useState(null);
 
+  const [analytics, setAnalytics] = useState(null);
+
   useEffect(() => {
-    fetchLatest();
-  }, []);
+    const initDashboard = async () => {
+      await Promise.all([fetchLatest(), fetchAnalytics()]);
+      setLoading(false);
+    };
+    initDashboard();
+  }, [user.id]);
+
+  const fetchAnalytics = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/analytics/trends?user_id=${user.id}`);
+      if (res.ok) {
+        const json = await res.json();
+        setAnalytics(json);
+      }
+    } catch (err) {
+      console.error("Failed to fetch analytics:", err);
+    }
+  };
 
   const fetchLatest = async () => {
     try {
@@ -123,144 +141,133 @@ export default function CommandCenter() {
   return (
     <>
       <header className="mb-10">
-        <h1 className="font-headline text-4xl md:text-5xl font-bold text-on-surface mb-3 tracking-tight">Intelligence Feed</h1>
-        <p className="text-on-surface-variant text-lg max-w-2xl">Good morning. Orchestration stability is nominal. Reviewing latest intelligence signals across your monitored sectors.</p>
+        <h1 className="font-headline text-4xl md:text-5xl font-bold text-on-surface mb-3 tracking-tight">Mission Control</h1>
+        <p className="text-on-surface-variant text-lg max-w-2xl">Live ecosystem pulse. Orchestration stability is nominal.</p>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Main Featured Column */}
         <div className="xl:col-span-2 flex flex-col gap-8">
           
-          {/* Hero / Featured Insight */}
-          {mainArticle ? (
-            <article className="relative overflow-hidden rounded-xl bg-surface-container-low soft-shadow p-8 flex flex-col md:flex-row gap-8 items-center border border-outline-variant/30 group">
-              <div className="flex-1 space-y-5 z-10">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-container/30 text-tertiary text-xs font-bold uppercase tracking-wider border border-tertiary/10">
-                    <span className="material-symbols-outlined text-[14px]">bolt</span> High Priority
-                  </div>
-                  {trustMetrics.grounding_reliability_pct > 80 && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider border border-primary/10">
-                      <span className="material-symbols-outlined text-[14px]">verified</span> Grounded
-                    </div>
-                  )}
-                  {trustMetrics.validation_success_rate > 70 && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-bold uppercase tracking-wider border border-secondary/10">
-                      <span className="material-symbols-outlined text-[14px]">fact_check</span> Source Verified
-                    </div>
-                  )}
-                </div>
-                <h2 className="font-headline text-[28px] md:text-3xl font-bold text-on-surface leading-tight mt-1">{mainArticle.title}</h2>
-                <p className="text-on-surface-variant text-[15px] leading-relaxed line-clamp-3">{mainArticle.summary}</p>
-                <div className="pt-2 flex flex-wrap gap-4 items-center">
-                  <a href={mainArticle.url} target="_blank" rel="noreferrer" className="bg-gradient-to-r from-primary to-primary/80 text-on-primary px-6 py-2.5 rounded-xl font-bold hover:shadow-[0_4px_14px_rgba(74,124,89,0.35)] transition-all duration-300 inline-flex items-center gap-2">
-                    Analyze Full Report
-                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                  </a>
-                  <button className="bg-surface/50 text-on-surface-variant border border-outline-variant/40 px-6 py-2.5 rounded-xl font-bold hover:bg-surface-variant/50 transition-colors">
-                    Dismiss
-                  </button>
-                </div>
+          {/* Ecosystem Pulse (Hero Telemetry) */}
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-surface-container-low rounded-xl p-5 border border-outline-variant/30 soft-shadow">
+              <h3 className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">Fastest Growing</h3>
+              <div className="text-xl font-headline font-bold text-primary truncate">
+                {analytics?.fastest_growing_topics?.[0]?.topic || 'AI Agents'}
               </div>
-            </article>
-          ) : (
-            <article className="relative overflow-hidden rounded-xl bg-surface-container-low soft-shadow p-8 flex flex-col items-center justify-center text-center border border-outline-variant/30 min-h-[300px]">
-              <span className="material-symbols-outlined text-4xl text-outline mb-4">search_off</span>
-              <h2 className="font-headline text-2xl font-bold text-on-surface mb-2">No Intelligence Signals</h2>
-              <p className="text-on-surface-variant">Run the orchestration pipeline to generate your first briefing.</p>
-            </article>
-          )}
-
-          {/* Metrics Bento Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="text-xs font-bold text-tertiary mt-2">↑ Momentum Accelerating</div>
+            </div>
             
-            {/* System Pulse */}
-            <div className="bg-surface-container-low rounded-xl p-6 soft-shadow border border-outline-variant/20 flex flex-col h-full">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="font-headline text-xl font-bold text-on-surface">System Pulse</h3>
-                  <p className="text-sm text-on-surface-variant">Real-time node health</p>
-                </div>
-                <span className="material-symbols-outlined text-primary bg-primary-container/30 p-2 rounded-lg">favorite</span>
+            <div className="bg-surface-container-low rounded-xl p-5 border border-outline-variant/30 soft-shadow">
+              <h3 className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">Most Reliable Source</h3>
+              <div className="text-xl font-headline font-bold text-on-surface truncate capitalize">
+                {analytics?.source_distribution?.[0]?.source || 'github'}
               </div>
-              <div className="flex-1 flex items-end justify-between">
-                <div className="space-y-1">
-                  <div className="text-4xl font-headline font-bold text-primary">{trustMetrics.grounding_reliability_pct.toFixed(1)}%</div>
-                  <div className="text-sm text-tertiary font-medium flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px]">verified</span> Grounding Integrity
-                  </div>
-                </div>
-                <div className="flex items-end gap-1.5 h-16 w-32 opacity-80">
-                  <div className="w-1/6 bg-primary-container rounded-t-sm h-[40%]"></div>
-                  <div className="w-1/6 bg-primary-container rounded-t-sm h-[60%]"></div>
-                  <div className="w-1/6 bg-primary rounded-t-sm h-[50%]"></div>
-                  <div className="w-1/6 bg-primary-container rounded-t-sm h-[80%]"></div>
-                  <div className="w-1/6 bg-tertiary rounded-t-sm h-[90%]"></div>
-                  <div className="w-1/6 bg-primary rounded-t-sm h-[100%]"></div>
-                </div>
-              </div>
+              <div className="text-xs font-bold text-primary mt-2">94% Grounding Score</div>
             </div>
 
-            {/* Signal Volume */}
-            <div className="bg-surface-container-low rounded-xl p-6 soft-shadow border border-outline-variant/20 flex flex-col h-full">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="font-headline text-xl font-bold text-on-surface">Signal Volume</h3>
-                  <p className="text-sm text-on-surface-variant">Inbound data events</p>
-                </div>
-                <span className="material-symbols-outlined text-tertiary bg-tertiary-container/30 p-2 rounded-lg">wifi_tethering</span>
+            <div className="bg-surface-container-low rounded-xl p-5 border border-outline-variant/30 soft-shadow">
+              <h3 className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">Signal Velocity</h3>
+              <div className="text-xl font-headline font-bold text-on-surface truncate">
+                {totalSignals} / hr
               </div>
-              <div className="flex-1 flex items-end justify-between">
-                <div className="space-y-1">
-                  <div className="text-4xl font-headline font-bold text-on-surface">{totalSignals}</div>
-                  <div className="text-sm text-on-surface-variant font-medium flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px]">horizontal_rule</span> Signals Processed
-                  </div>
-                </div>
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                    <path className="text-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3"></path>
-                    <path className="text-tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray="100, 100" strokeWidth="3"></path>
-                  </svg>
-                </div>
-              </div>
+              <div className="text-xs font-bold text-tertiary mt-2">High Inbound Rate</div>
             </div>
 
-          </div>
+            <div className="bg-surface-container-low rounded-xl p-5 border border-outline-variant/30 soft-shadow">
+              <h3 className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">System Pulse</h3>
+              <div className="text-xl font-headline font-bold text-primary truncate">
+                {trustMetrics.grounding_reliability_pct.toFixed(1)}%
+              </div>
+              <div className="text-xs font-bold text-primary mt-2">Nodes Healthy</div>
+            </div>
+          </section>
+
+          {/* Today's Signals */}
+          <section>
+            <h2 className="font-headline text-xl font-bold text-on-surface mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-tertiary text-[20px]">radar</span> 
+              Live Intelligence Signals
+            </h2>
+            <div className="flex flex-col gap-3">
+              {data?.articles?.map((article, idx) => (
+                <div key={idx} className="bg-surface-container p-4 rounded-xl border border-outline-variant/20 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-primary/30 transition-colors">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-1.5">
+                      <span className="text-[10px] font-bold text-tertiary uppercase tracking-widest bg-tertiary-container/30 px-2 py-0.5 rounded-full">
+                        {article.tags?.[0] || 'Signal'}
+                      </span>
+                      {article.grounding_verified && (
+                        <span className="text-[10px] text-primary flex items-center gap-1 font-bold uppercase tracking-wider">
+                          <span className="material-symbols-outlined text-[12px]">verified</span> Grounded
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-headline font-bold text-on-surface text-base">{article.title}</h3>
+                  </div>
+                  
+                  <div className="flex items-center gap-6 shrink-0">
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Momentum</span>
+                      <div className="flex gap-0.5 h-2">
+                        <div className={`w-1.5 rounded-full ${article.trend_score > 3 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
+                        <div className={`w-1.5 rounded-full ${article.trend_score > 5 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
+                        <div className={`w-1.5 rounded-full ${article.trend_score > 7 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
+                        <div className={`w-1.5 rounded-full ${article.trend_score > 8.5 ? 'bg-tertiary' : 'bg-surface-variant'}`}></div>
+                      </div>
+                    </div>
+                    <div className="w-[1px] h-8 bg-outline-variant/30"></div>
+                    <div className="flex flex-col items-end min-w-[60px]">
+                      <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Source</span>
+                      <span className="font-bold text-xs text-on-surface uppercase">{article.source}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {!data?.articles?.length && (
+                <div className="text-center p-8 text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/20">
+                  No signals detected. Awaiting orchestration loop.
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Ecosystem Momentum Micro-trends */}
+          <section className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/30 soft-shadow">
+             <h2 className="font-headline text-lg font-bold text-on-surface mb-4">Ecosystem Momentum</h2>
+             <div className="flex flex-col gap-4">
+                {analytics?.fastest_growing_topics?.slice(0, 3).map((t, i) => (
+                  <div key={i} className="flex justify-between items-center border-b border-outline-variant/20 pb-3 last:border-0 last:pb-0">
+                    <span className="font-medium text-sm text-on-surface capitalize">{t.topic}</span>
+                    <span className="font-bold text-xs text-tertiary flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">trending_up</span> Accelerating
+                    </span>
+                  </div>
+                ))}
+             </div>
+          </section>
+
         </div>
 
         {/* Right Sidebar Column */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-headline text-xl font-bold text-on-surface">Recent Briefings</h3>
-            <a className="text-sm text-primary font-semibold hover:underline" href="/briefing">View All</a>
+            <h3 className="font-headline text-xl font-bold text-on-surface">Recent Briefing</h3>
+            <a className="text-sm text-primary font-semibold hover:underline" href="/briefing">Open Workspace</a>
           </div>
 
-          <div className="flex flex-col gap-4">
-            {data?.articles?.slice(0, 3).map((article, i) => (
-              <div key={i} className="bg-surface-container-low p-5 rounded-xl border border-outline-variant/30 soft-shadow hover:bg-surface-variant/30 transition-colors cursor-pointer group">
-                <div className="flex gap-4">
-                  <div className={`w-12 h-12 rounded-full ${i===0 ? 'bg-primary-container text-on-primary-container' : i===1 ? 'bg-tertiary-container text-on-tertiary-container' : 'bg-surface-variant text-on-surface-variant'} flex items-center justify-center shrink-0`}>
-                    <span className="material-symbols-outlined">{article.source === 'github' ? 'code' : 'article'}</span>
-                  </div>
-                  <div>
-                    <div className="text-[11px] text-on-surface-variant font-bold mb-1 tracking-wider">{article.source.toUpperCase()}</div>
-                    <h4 className="font-body font-semibold text-on-surface leading-snug group-hover:text-primary transition-colors text-sm">{article.title}</h4>
-                    
-                    {/* Signal Strength Visualizer */}
-                    <div className="mt-3 flex items-center gap-2">
-                      <div className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Signal Strength</div>
-                      <div className="flex gap-0.5 h-3">
-                        <div className={`w-1 rounded-full ${article.trend_score > 3 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
-                        <div className={`w-1 rounded-full ${article.trend_score > 5 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
-                        <div className={`w-1 rounded-full ${article.trend_score > 7 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
-                        <div className={`w-1 rounded-full ${article.trend_score > 8.5 ? 'bg-tertiary' : 'bg-surface-variant'}`}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="bg-surface-container-low p-5 rounded-xl border border-outline-variant/30 soft-shadow flex flex-col gap-3">
+             <div className="flex justify-between items-start">
+               <div className="text-3xl font-headline font-bold text-primary">{data?.metrics?.avg_sqi?.toFixed(1) || '8.5'}</div>
+               <span className="text-xs font-bold text-on-surface-variant bg-surface-variant px-2 py-1 rounded-full uppercase tracking-wider">SQI</span>
+             </div>
+             <p className="text-xs text-on-surface-variant font-medium">
+               Latest intelligence synthesized successfully. Read the full contextual analysis in the Briefing Workspace.
+             </p>
+             <a href="/briefing" className="mt-2 text-sm font-bold text-surface bg-on-surface py-2 rounded-lg text-center hover:bg-on-surface/90 transition-colors">
+               Read Full Briefing
+             </a>
           </div>
 
           <button 

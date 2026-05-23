@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '../../lib/config';
 import { useUser } from '../../context/UserContext';
+
+const SUGGESTED_TOPICS = [
+  'AI Agents', 'Open Source LLMs', 'AI Startups', 'Robotics', 
+  'Coding Assistants', 'MCP Ecosystem', 'Research Papers', 
+  'AI Infrastructure', 'Computer Vision', 'Generative AI', 
+  'AI Security', 'Benchmarking & Evaluation'
+];
 
 export default function Preferences() {
   const { preferences, updatePreferences, loading: contextLoading } = useUser();
@@ -14,8 +21,10 @@ export default function Preferences() {
   const [newSource, setNewSource] = useState('');
   const [isAddingTopic, setIsAddingTopic] = useState(false);
   const [isAddingSource, setIsAddingSource] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const suggestionsRef = useRef(null);
 
   useEffect(() => {
     if (preferences) {
@@ -24,6 +33,16 @@ export default function Preferences() {
       setSources(preferences.preferred_sources || []);
     }
   }, [preferences]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const savePreferences = async () => {
     setSaving(true);
@@ -125,15 +144,44 @@ export default function Preferences() {
           
           <div className="flex flex-wrap gap-3 mt-auto">
             {topics.map((topic, i) => (
-              <div key={i} className={`rounded-full px-5 py-2.5 flex items-center gap-2 text-sm font-semibold transition-colors cursor-pointer border shadow-sm ${i % 2 === 0 ? 'bg-primary-container text-on-primary-fixed-variant hover:bg-primary-fixed border-primary/10' : i % 3 === 0 ? 'bg-tertiary-container/40 text-on-tertiary-fixed-variant hover:bg-tertiary-container/60 border-tertiary/10' : 'bg-surface-container-high text-on-surface hover:bg-surface-variant border-outline-variant/30'}`}>
+              <div key={i} className={`rounded-full px-5 py-2.5 flex items-center gap-2 text-sm font-semibold transition-colors cursor-pointer border shadow-sm ${i % 2 === 0 ? 'bg-primary-container text-on-primary-container border-primary/10' : i % 3 === 0 ? 'bg-tertiary-container text-on-tertiary-container border-tertiary/10' : 'bg-surface-container-high text-on-surface hover:bg-surface-variant border-outline-variant/30'}`}>
                 {topic}
                 <button onClick={() => removeTopic(i)} className="hover:text-error transition-colors flex items-center"><span className="material-symbols-outlined text-[18px]">close</span></button>
               </div>
             ))}
-            {/* Add New Pill Button */}
-            <button className="rounded-full px-5 py-2.5 flex items-center gap-2 text-sm font-semibold border border-dashed border-primary/50 text-primary hover:bg-primary/5 transition-colors">
-              <span className="material-symbols-outlined text-[18px]">add</span> Explore Suggestions
-            </button>
+            {/* Add New Pill Button & Dropdown */}
+            <div className="relative" ref={suggestionsRef}>
+              <button 
+                onClick={() => setShowSuggestions(!showSuggestions)}
+                className="rounded-full px-5 py-2.5 flex items-center gap-2 text-sm font-semibold border border-dashed border-primary/50 text-primary hover:bg-primary/5 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">explore</span> Explore Suggestions
+              </button>
+              
+              {showSuggestions && (
+                <div className="absolute top-full left-0 mt-2 w-64 bg-surface border border-outline-variant/30 rounded-xl shadow-lg z-10 py-2 max-h-64 overflow-y-auto">
+                  {SUGGESTED_TOPICS.map((topic, i) => {
+                    const isAdded = topics.includes(topic);
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          if (!isAdded) {
+                            setTopics([...topics, topic]);
+                          }
+                          setShowSuggestions(false);
+                        }}
+                        disabled={isAdded}
+                        className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between ${isAdded ? 'text-on-surface-variant/50 cursor-not-allowed' : 'text-on-surface hover:bg-surface-variant cursor-pointer'}`}
+                      >
+                        {topic}
+                        {isAdded && <span className="material-symbols-outlined text-[16px]">check</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
