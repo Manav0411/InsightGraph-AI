@@ -1,5 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Integer
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from backend.db.base import Base
@@ -25,6 +26,17 @@ class Briefing(Base):
     
     avg_trend_score = Column(Float, default=0.0)
     total_articles = Column(Integer, default=0)
+    
+    # Historical Intelligence Denormalized Metadata
+    dominant_topics = Column(JSONB, default=list)
+    top_signal = Column(JSONB, nullable=True)
+    top_sources = Column(JSONB, default=list)
+    signal_quality_index = Column(Float, default=0.0)
+    
+    # Personalization Metadata
+    matched_topics = Column(JSONB, default=list)
+    matched_sources = Column(JSONB, default=list)
+    personalization_strength = Column(Float, default=0.0)
     
     created_at = Column(DateTime, default=datetime.utcnow)
 

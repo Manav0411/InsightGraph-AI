@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from backend.routes import newsletter, users, metrics
+from backend.routes import newsletter, users, metrics, analytics
 from backend.db.database import get_db, engine
 from backend.db.base import Base
 from utils.logger import get_logger
@@ -32,6 +32,7 @@ app.add_middleware(
 app.include_router(newsletter.router)
 app.include_router(users.router)
 app.include_router(metrics.router)
+app.include_router(analytics.router)
 
 @app.get("/health", tags=["Health"])
 async def health():

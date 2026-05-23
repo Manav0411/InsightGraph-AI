@@ -1,16 +1,17 @@
 import time
 import logging
-from utils.user_loader import load_user_profile
+from backend.services.persistence_service import get_user_profile_pydantic
+from sqlalchemy.orm import Session
 from models.state import PipelineState
 from graphs.newsletter_graph import create_newsletter_graph
 from backend.schemas.responses import NewsletterResponse, ArticleResponse, TrustMetrics
 from utils.runtime_store import save_last_run
 
-logger = logging.getLogger("api_workflow")
-
 from backend.schemas.requests import NewsletterRequest
 
-async def run_newsletter_workflow(request: NewsletterRequest) -> NewsletterResponse:
+logger = logging.getLogger("api_workflow")
+
+async def run_newsletter_workflow(request: NewsletterRequest, db: Session) -> NewsletterResponse:
     """
     Wraps the LangGraph orchestration.
     Runs the pipeline synchronously since LangGraph execution blocks,
@@ -19,16 +20,8 @@ async def run_newsletter_workflow(request: NewsletterRequest) -> NewsletterRespo
     user_id = request.user_id
     logger.info(f"[API] Newsletter generation requested for user: {user_id}")
     
-    # 1. Load User Profile
-    user_profile = load_user_profile(user_id)
-    
-    # Override with real-time preferences from request if present
-    if request.preferred_topics is not None:
-        user_profile.preferences.preferred_topics = request.preferred_topics
-    if request.preferred_sources is not None:
-        user_profile.preferences.preferred_sources = request.preferred_sources
-    if request.excluded_topics is not None:
-        user_profile.preferences.excluded_topics = request.excluded_topics
+    # 1. Load User Profile natively from DB
+    user_profile = get_user_profile_pydantic(db, user_id)
     
     # 2. Initialize State
     initial_state = PipelineState(

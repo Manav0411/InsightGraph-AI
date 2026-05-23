@@ -50,10 +50,7 @@ export default function CommandCenter() {
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({ 
-          user_id: user.id,
-          preferred_topics: preferences?.preferred_topics || [],
-          preferred_sources: preferences?.preferred_sources || [],
-          excluded_topics: preferences?.excluded_topics || []
+          user_id: user.id
         })
       });
       
