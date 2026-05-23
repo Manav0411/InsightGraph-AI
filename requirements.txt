@@ -8,3 +8,6 @@ pydantic
 rich
 python-dotenv
 langsmith
+sqlalchemy
+psycopg2-binary
+alembic
