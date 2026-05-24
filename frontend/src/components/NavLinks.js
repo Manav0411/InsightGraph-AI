@@ -7,10 +7,10 @@ export default function NavLinks() {
   const pathname = usePathname();
 
   const links = [
-    { name: 'Dashboard', href: '/' },
-    { name: 'Intelligence Briefings', href: '/briefing' },
-    { name: 'History', href: '/history' },
+    { name: 'Intelligence Briefing', href: '/' },
+    { name: 'Mission Control', href: '/mission-control' },
     { name: 'Analytics', href: '/analytics' },
+    { name: 'History', href: '/history' },
   ];
 
   return (
@@ -24,10 +24,14 @@ export default function NavLinks() {
             className={
               isActive
                 ? "text-primary border-b-2 border-primary pb-1 h-full flex items-center font-semibold"
-                : "text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-variant/30 rounded-lg px-3 py-2"
+                : "text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-variant/30 rounded-lg px-3 py-2 flex items-center"
             }
           >
-            {link.name}
+            {link.icon ? (
+              <span className="material-symbols-outlined text-[24px]">{link.icon}</span>
+            ) : (
+              link.name
+            )}
           </Link>
         );
       })}

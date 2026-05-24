@@ -3,6 +3,7 @@ import NavLinks from "../components/NavLinks";
 import { UserProvider } from "../context/UserContext";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { ThemeToggle } from "../components/ThemeToggle";
+import Link from 'next/link';
 
 export const metadata = {
   title: "InsightGraph - Intelligence Command Center",
@@ -25,15 +26,11 @@ export default function RootLayout({ children }) {
               <NavLinks />
             </div>
             <div className="flex items-center gap-4">
-              <div className="relative group">
-                <a href="/preferences" className="text-on-surface-variant hover:bg-surface-variant/30 hover:text-primary rounded-lg p-2 transition-colors flex items-center justify-center">
-                  <span className="material-symbols-outlined" data-icon="settings">settings</span>
-                </a>
-              </div>
+
               <ThemeToggle />
-              <button className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
-                <span className="material-symbols-outlined" data-icon="notifications">notifications</span>
-              </button>
+              <Link href="/preferences" className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
+                <span className="material-symbols-outlined" data-icon="settings">settings</span>
+              </Link>
               <button className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
                 <span className="material-symbols-outlined" data-icon="account_circle">account_circle</span>
               </button>
