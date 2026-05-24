@@ -31,8 +31,9 @@ def route_after_evaluation(state: PipelineState) -> str:
     has_tavily = any(a.source == "tavily" for a in valid_articles)
     avg_trend_score = sum(a.trend_score for a in valid_articles) / len(valid_articles) if valid_articles else 0.0
     
+    from config.settings import TARGET_FINAL_ARTICLES
     needs_recovery = (
-        len(valid_articles) < 5 or
+        len(valid_articles) < TARGET_FINAL_ARTICLES or
         not has_github or
         not has_tavily or
         avg_trend_score < 2.0

@@ -1,7 +1,7 @@
 import time
 from models.state import PipelineState
 from utils.logger import get_logger
-from config.settings import MAX_ARTICLES
+from config.settings import MAX_ARTICLES_TO_ANALYZE
 
 logger = get_logger("ranker")
 
@@ -82,8 +82,8 @@ def rank_articles(state: PipelineState) -> PipelineState:
     # Sort articles by trend_score descending
     state.articles = sorted(state.articles, key=lambda x: x.trend_score, reverse=True)
     
-    # Keep top articles based on config
-    top_articles = state.articles[:MAX_ARTICLES]
+    # Keep top articles based on config for downstream analysis buffer
+    top_articles = state.articles[:MAX_ARTICLES_TO_ANALYZE]
     
     elapsed_time = round(time.perf_counter() - start_time, 2)
     state.metadata.agent_timings["ranker"] = elapsed_time
@@ -93,4 +93,3 @@ def rank_articles(state: PipelineState) -> PipelineState:
     
     state.articles = top_articles
     return state
-

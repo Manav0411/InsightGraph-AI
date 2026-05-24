@@ -1,7 +1,7 @@
 import time
 from models.state import PipelineState
 from utils.logger import get_logger
-from config.settings import MIN_TREND_SCORE, MIN_SUMMARY_WORDS
+from config.settings import MIN_TREND_SCORE, MIN_SUMMARY_WORDS, TARGET_FINAL_ARTICLES
 
 logger = get_logger("evaluator")
 
@@ -97,11 +97,16 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
     if avg_trend_score < 2.0:
         logger.warning(f"[Evaluator] Warning: Average trend score is below baseline ({round(avg_trend_score, 2)} < 2.0).")
         
+    # Trim down to the exact requested target size
+    if len(valid_articles) > TARGET_FINAL_ARTICLES:
+        valid_articles = valid_articles[:TARGET_FINAL_ARTICLES]
+    
+    state.articles = valid_articles
     elapsed_time = round(time.perf_counter() - start_time, 2)
     state.metadata.agent_timings["evaluator"] = elapsed_time
     
     logger.info(f"[Evaluator] Rejected {state.metadata.total_articles_rejected} low-quality articles.")
-    logger.info(f"[Evaluator] Evaluation completed. Retained {len(valid_articles)} valid articles.")
+    logger.info(f"[Evaluator] Evaluation completed. Retained {len(valid_articles)} valid articles for the final newsletter.")
     logger.info(f"[Evaluator] Completed in {elapsed_time}s")
     
     return state
