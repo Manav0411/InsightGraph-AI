@@ -109,3 +109,36 @@ async def run_newsletter_workflow(request: NewsletterRequest, db: Session) -> Ne
     save_last_run(response.model_dump())
     
     return response
+
+async def generate_autonomous_briefing(user_id: str):
+    """
+    Called by APScheduler. Acts as the background trigger for the pipeline.
+    Creates its own DB session so it doesn't depend on FastAPI request cycles.
+    """
+    from backend.db.database import SessionLocal
+    from backend.services.persistence_service import save_briefing
+    
+    logger.info(f"[scheduler] Initiating autonomous briefing generation for user: {user_id}")
+    db = SessionLocal()
+    try:
+        from backend.models.db_user import User
+        from backend.services.email_service import send_briefing_email
+        
+        request = NewsletterRequest(user_id=user_id)
+        response = await run_newsletter_workflow(request, db)
+        db_briefing = save_briefing(db, user_id, response)
+        
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user and db_briefing:
+                await send_briefing_email(db, user, db_briefing)
+        except Exception as email_err:
+            logger.error(f"[scheduler] Email delivery failed but orchestration succeeded for {user_id}: {email_err}")
+
+        logger.info(f"[scheduler] Successfully completed autonomous generation for {user_id}")
+        return response
+    except Exception as e:
+        logger.error(f"[scheduler] Autonomous workflow failed for user {user_id}: {str(e)}")
+        raise
+    finally:
+        db.close()

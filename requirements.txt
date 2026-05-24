@@ -10,4 +10,5 @@ python-dotenv
 langsmith
 sqlalchemy
 psycopg2-binary
-alembic
+alembicapscheduler==3.11.2
+resend==2.30.1

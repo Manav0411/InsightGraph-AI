@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from backend.routes import newsletter, users, metrics, analytics
+from backend.routes import newsletter, users, metrics, analytics, scheduler, email
 from backend.db.database import get_db, engine
 from backend.db.base import Base
 from utils.logger import get_logger
@@ -33,6 +33,8 @@ app.include_router(newsletter.router)
 app.include_router(users.router)
 app.include_router(metrics.router)
 app.include_router(analytics.router)
+app.include_router(scheduler.router)
+app.include_router(email.router)
 
 @app.get("/health", tags=["Health"])
 async def health():
@@ -56,9 +58,15 @@ async def startup_event():
         from backend.models.db_preferences import UserPreferences
         from backend.models.db_briefing import Briefing
         from backend.models.db_article import Article
+        from backend.models.db_email_log import EmailDeliveryLog
         
         Base.metadata.create_all(bind=engine)
         logger.info("SQLAlchemy metadata verified tables.")
+        
+        # Start Autonomous Scheduler
+        from backend.services.scheduler_service import start_scheduler
+        start_scheduler(app)
+        
     except Exception as e:
         logger.error(f"PostgreSQL connectivity failed on startup: {e}")
         logger.warning("Application starting without DB functionality. Using fallback persistence if needed.")
