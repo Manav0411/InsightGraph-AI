@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../../lib/config';
 import { useUser } from '../../context/UserContext';
 
 export default function CommandCenter() {
-  const { user, preferences } = useUser();
+  const { user, preferences, getToken } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -20,12 +20,17 @@ export default function CommandCenter() {
       await Promise.all([fetchLatest(), fetchAnalytics(), fetchHistory()]);
       setLoading(false);
     };
-    initDashboard();
-  }, [user.id]);
+    if (user?.id) {
+      initDashboard();
+    }
+  }, [user?.id, getToken]);
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/newsletter/history?user_id=${user.id}`);
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/newsletter/history`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         const json = await res.json();
         setHistory(json);
@@ -37,7 +42,10 @@ export default function CommandCenter() {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/analytics/trends?user_id=${user.id}`);
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/analytics/trends`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         const json = await res.json();
         setAnalytics(json);
@@ -49,7 +57,10 @@ export default function CommandCenter() {
 
   const fetchLatest = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/newsletter/latest`);
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/newsletter/latest`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -73,12 +84,16 @@ export default function CommandCenter() {
     }, 100);
 
     try {
+      const token = await getToken();
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s global timeout for stream
 
       const response = await fetch(`${API_BASE_URL}/newsletter/generate-stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         signal: controller.signal,
         body: JSON.stringify({ 
           user_id: user.id

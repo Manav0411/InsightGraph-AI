@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from backend.db.database import get_db
 from backend.services.persistence_service import fetch_longitudinal_analytics
+from backend.dependencies.auth import get_current_user
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 @router.get("/trends")
-async def get_analytics_trends(user_id: str = "default_user", db: Session = Depends(get_db)):
+async def get_analytics_trends(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Returns longitudinal platform intelligence trends including tokens, latency, topics, and sources.
     """

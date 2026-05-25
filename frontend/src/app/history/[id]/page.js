@@ -25,7 +25,7 @@ const generateContextualEvolution = (briefing, prevBriefing) => {
 
 export default function HistoricalBriefingViewer() {
   const { id } = useParams();
-  const { user } = useUser();
+  const { user, getToken } = useUser();
   const [briefing, setBriefing] = useState(null);
   const [historyContext, setHistoryContext] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,14 +34,19 @@ export default function HistoricalBriefingViewer() {
   useEffect(() => {
     const fetchBriefing = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/newsletter/history/${id}`);
+        const token = await getToken();
+        const res = await fetch(`${API_BASE_URL}/newsletter/history/${id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) {
           const json = await res.json();
           setBriefing(json);
         }
         
         // Fetch context
-        const histRes = await fetch(`${API_BASE_URL}/newsletter/history?user_id=${user.id}`);
+        const histRes = await fetch(`${API_BASE_URL}/newsletter/history`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (histRes.ok) {
           const histJson = await histRes.json();
           setHistoryContext(histJson);
@@ -53,13 +58,16 @@ export default function HistoricalBriefingViewer() {
       }
     };
     
-    if (id) fetchBriefing();
-  }, [id, user.id]);
+    if (id && user?.id) fetchBriefing();
+  }, [id, user?.id, getToken]);
 
   const handleExport = async () => {
     setDownloading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/newsletter/export/${id}`);
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/newsletter/export/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);

@@ -6,14 +6,17 @@ import { useUser } from '../../context/UserContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 export default function Analytics() {
-  const { user } = useUser();
+  const { user, getToken } = useUser();
   const [trendsData, setTrendsData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/analytics/trends?user_id=${user.id}`);
+        const token = await getToken();
+        const res = await fetch(`${API_BASE_URL}/analytics/trends`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) {
           const json = await res.json();
           
@@ -38,8 +41,8 @@ export default function Analytics() {
         setLoading(false);
       }
     };
-    fetchAnalytics();
-  }, [user.id]);
+    if (user?.id) fetchAnalytics();
+  }, [user?.id, getToken]);
 
   if (loading) return <div className="p-12 text-center text-on-surface-variant text-lg">Loading Platform Intelligence...</div>;
   

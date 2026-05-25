@@ -7,26 +7,29 @@ from backend.schemas.responses import NewsletterResponse
 from backend.services.workflow_service import run_newsletter_workflow
 from backend.db.database import get_db
 from backend.services.persistence_service import save_briefing, fetch_latest_briefing, fetch_briefing_history_filtered, fetch_briefing_with_articles
+from backend.dependencies.auth import get_current_user
 from utils.runtime_store import load_last_newsletter
 
 router = APIRouter(prefix="/newsletter", tags=["Newsletter"])
 
 @router.post("/generate", response_model=NewsletterResponse)
-async def generate_newsletter(request: NewsletterRequest, db: Session = Depends(get_db)):
+async def generate_newsletter(request: NewsletterRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
     """
     Triggers the LangGraph orchestration to generate a personalized newsletter.
     This is a long-running synchronous task.
     """
     try:
+        # Override the request user_id with the securely verified token user_id
+        request.user_id = user_id
         response = await run_newsletter_workflow(request, db)
         # Persist to PostgreSQL alongside JSON cache
-        save_briefing(db, request.user_id, response)
+        save_briefing(db, user_id, response)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
 
 @router.get("/latest", response_model=NewsletterResponse)
-async def get_latest_newsletter(db: Session = Depends(get_db)):
+async def get_latest_newsletter(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
     """
     Returns the most recently generated newsletter from the runtime store.
     Currently falls back to JSON cache.
@@ -37,7 +40,7 @@ async def get_latest_newsletter(db: Session = Depends(get_db)):
     return data
 
 @router.get("/history")
-async def get_newsletter_history(user_id: str = "default_user", db: Session = Depends(get_db)):
+async def get_newsletter_history(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Returns the history of briefings from PostgreSQL with full metadata.
     """
@@ -58,13 +61,17 @@ async def get_newsletter_history(user_id: str = "default_user", db: Session = De
     ]
 
 @router.get("/history/{briefing_id}")
-async def get_historical_briefing(briefing_id: str, db: Session = Depends(get_db)):
+async def get_historical_briefing(briefing_id: str, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
     """
     Returns a fully hydrated historical briefing with all its articles and context.
     """
     briefing = fetch_briefing_with_articles(db, briefing_id)
     if not briefing:
         raise HTTPException(status_code=404, detail="Briefing not found")
+    
+    # Optional: Verify that this briefing belongs to user_id
+    if briefing.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this briefing")
         
     return {
         "id": briefing.id,
@@ -101,13 +108,16 @@ async def get_historical_briefing(briefing_id: str, db: Session = Depends(get_db
     }
 
 @router.get("/export/{briefing_id}")
-async def export_briefing(briefing_id: str, db: Session = Depends(get_db)):
+async def export_briefing(briefing_id: str, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
     """
     Generates a premium editorial markdown export of a historical briefing.
     """
     briefing = fetch_briefing_with_articles(db, briefing_id)
     if not briefing:
         raise HTTPException(status_code=404, detail="Briefing not found")
+        
+    if briefing.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this briefing")
         
     md = f"# {briefing.title}\\n\\n"
     md += f"*Generated: {briefing.generated_at.strftime('%B %d, %Y')} | Signal Quality: {briefing.signal_quality_index}/100*\\n\\n"
@@ -126,11 +136,14 @@ async def export_briefing(briefing_id: str, db: Session = Depends(get_db)):
     return PlainTextResponse(md, media_type="text/markdown", headers={"Content-Disposition": f"attachment; filename=InsightGraph_{briefing_id}.md"})
 
 @router.post("/generate-stream")
-async def generate_newsletter_stream(request: NewsletterRequest, db: Session = Depends(get_db)):
+async def generate_newsletter_stream(request: NewsletterRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
     """
     Simulates a live workflow execution panel by streaming progress updates via SSE,
     followed by the actual generation.
     """
+    # Secure override
+    request.user_id = user_id
+    
     async def event_generator():
         stages = [
             ("Retrieving sources", 2.5),
@@ -152,7 +165,7 @@ async def generate_newsletter_stream(request: NewsletterRequest, db: Session = D
             response = await run_newsletter_workflow(request, db)
             
             # Persist to PostgreSQL alongside JSON cache
-            save_briefing(db, request.user_id, response)
+            save_briefing(db, user_id, response)
             
             yield f"data: {{\"stage\": \"Done\", \"status\": \"completed\", \"result\": \"success\"}}\\n\\n"
         except Exception as e:
@@ -165,6 +178,7 @@ async def generate_autonomous(user_id: str, db: Session = Depends(get_db)):
     """
     Simulates a background cron trigger. 
     Accepts ZERO preferences in the payload, purely DB-driven orchestration.
+    (Kept unauthenticated because it simulates a server-to-server or local webhook call).
     """
     try:
         request = NewsletterRequest(user_id=user_id)

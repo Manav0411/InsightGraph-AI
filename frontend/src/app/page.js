@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../lib/config';
 import { useUser } from '../context/UserContext';
 
 export default function IntelligenceReader() {
-  const { user } = useUser();
+  const { user, getToken } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState([]);
@@ -13,9 +13,12 @@ export default function IntelligenceReader() {
   useEffect(() => {
     const fetchLatest = async () => {
       try {
+        const token = await getToken();
+        const headers = { 'Authorization': `Bearer ${token}` };
+        
         const [resLatest, resHistory] = await Promise.all([
-          fetch(`${API_BASE_URL}/newsletter/latest`),
-          fetch(`${API_BASE_URL}/newsletter/history?user_id=${user.id}`)
+          fetch(`${API_BASE_URL}/newsletter/latest`, { headers }),
+          fetch(`${API_BASE_URL}/newsletter/history`, { headers })
         ]);
         if (resLatest.ok) {
           const json = await resLatest.json();
@@ -31,8 +34,8 @@ export default function IntelligenceReader() {
         setLoading(false);
       }
     };
-    fetchLatest();
-  }, [user.id]);
+    if (user?.id) fetchLatest();
+  }, [user?.id, getToken]);
 
   if (loading) {
     return (

@@ -42,7 +42,7 @@ const generateNarrative = (briefing, prevBriefing) => {
 // --------------------------------
 
 export default function HistoryPage() {
-  const { user } = useUser();
+  const { user, getToken } = useUser();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -50,7 +50,10 @@ export default function HistoryPage() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/newsletter/history?user_id=${user.id}`);
+        const token = await getToken();
+        const res = await fetch(`${API_BASE_URL}/newsletter/history`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) {
           const json = await res.json();
           setHistory(json);
@@ -61,8 +64,8 @@ export default function HistoryPage() {
         setLoading(false);
       }
     };
-    fetchHistory();
-  }, [user.id]);
+    if (user?.id) fetchHistory();
+  }, [user?.id, getToken]);
 
   const filteredHistory = history.filter(b => 
     b.title.toLowerCase().includes(search.toLowerCase()) || 
