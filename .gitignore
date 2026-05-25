@@ -37,3 +37,5 @@ frontend/.env*.local
 .cursorrules
 .vscode/
 .idea/
+
+backend/.chroma_db/

@@ -14,3 +14,5 @@ alembic
 apscheduler==3.11.2
 resend==2.30.1
 svix
+chromadb
+sentence-transformers

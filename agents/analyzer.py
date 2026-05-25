@@ -10,6 +10,7 @@ from utils.logger import get_logger
 from models.state import PipelineState
 from prompts.news_analysis_prompt import news_prompt
 from prompts.github_analysis_prompt import github_prompt
+from backend.services.vector_store import memory_manager
 
 load_dotenv()
 logger = get_logger("analyzer")
@@ -85,6 +86,17 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         # Route to the appropriate processing chain
         chain = github_chain if article.source == "github" else news_chain
         
+        # 1. Retrieve Historical Context from Vector Memory
+        history_results = memory_manager.get_historical_context(article.title, state.user_profile.user_id)
+        history_str = "No historical context available."
+        
+        if history_results:
+            logger.info(f"[Analyzer] Found {len(history_results)} related historical articles for: {article.title}")
+            history_str = ""
+            for h in history_results:
+                date_str = h['generated_at'][:10] if h.get('generated_at') else "Unknown Date"
+                history_str += f"- [{date_str}] {h['title']}: {h['content'][:300]}...\n"
+        
         try:
             # Implement auto-retry on rate limit errors
             retries = 0
@@ -94,7 +106,8 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                 try:
                     analysis_dict = chain.invoke({
                         "title": article.title,
-                        "content": truncated_content
+                        "content": truncated_content,
+                        "history": history_str
                     })
                     break  # Succeeded, break retry loop
                 except Exception as e:

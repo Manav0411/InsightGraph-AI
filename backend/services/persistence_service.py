@@ -152,11 +152,20 @@ def save_briefing(db: Session, user_id: str, response: NewsletterResponse) -> Br
             recommendation_reason=", ".join(a.recommendation_reasons) if a.recommendation_reasons else None,
             is_grounded=a.grounding_verified
         )
+        db_briefing.articles.append(db_article)
         db.add(db_article)
         
     db.commit()
     db.refresh(db_briefing)
     logger.info(f"[Persistence] Saved briefing {db_briefing.id} with SQI {sqi}")
+    
+    # Ingest into Vector Memory
+    try:
+        from backend.services.vector_store import memory_manager
+        memory_manager.store_briefing(db_briefing)
+    except Exception as e:
+        logger.error(f"[Persistence] Failed to index into Vector Memory: {e}")
+        
     return db_briefing
 
 def fetch_latest_briefing(db: Session, user_id: str):
