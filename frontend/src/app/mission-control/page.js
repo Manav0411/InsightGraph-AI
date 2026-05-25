@@ -135,7 +135,7 @@ export default function CommandCenter() {
                 clearInterval(timerInterval);
                 setGenerateProgress(prev => ({ ...prev, progress: 100, stage: 'Complete' }));
                 setTimeout(() => {
-                  window.location.href = '/briefing';
+                  window.location.href = '/';
                 }, 2500);
               } else if (eventData.stage === 'Error') {
                 clearInterval(timerInterval);
