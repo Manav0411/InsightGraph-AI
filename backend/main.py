@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from backend.routes import newsletter, users, metrics, analytics, scheduler, email
+from backend.routes import newsletter, users, metrics, analytics, scheduler, email, webhooks
 from backend.db.database import get_db, engine
 from backend.db.base import Base
 from utils.logger import get_logger
@@ -35,6 +35,7 @@ app.include_router(metrics.router)
 app.include_router(analytics.router)
 app.include_router(scheduler.router)
 app.include_router(email.router)
+app.include_router(webhooks.router)
 
 @app.get("/health", tags=["Health"])
 async def health():

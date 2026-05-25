@@ -12,16 +12,21 @@ from utils.logger import get_logger
 
 logger = get_logger("persistence")
 
-def create_or_get_user(db: Session, user_id: str) -> User:
+def create_or_get_user(db: Session, user_id: str, email: str = None) -> User:
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        user = User(id=user_id)
+        user = User(id=user_id, email=email)
         db.add(user)
         prefs = UserPreferences(user_id=user_id)
         db.add(prefs)
         db.commit()
         db.refresh(user)
         logger.info(f"[Persistence] Created new user profile for {user_id}")
+    else:
+        if email and user.email != email:
+            user.email = email
+            db.commit()
+            logger.info(f"[Persistence] Updated email for user {user_id}")
     return user
 
 def get_user_profile_pydantic(db: Session, user_id: str) -> UserProfile:
