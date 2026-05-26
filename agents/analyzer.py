@@ -17,6 +17,7 @@ logger = get_logger("analyzer")
 
 class ArticleAnalysis(BaseModel):
     summary: str = Field(description="A concise summary of the article (maximum 2-3 sentences). Avoid repetitive phrasing.")
+    details: List[str] = Field(description="Extract 3-5 complete, full-sentence concrete bullet points containing the most important details, facts, or technical specs. Do NOT just output short keywords or tags.")
     why_it_matters: str = Field(description="Why this news is important for the AI industry. Be concise and high-signal.")
     tags: List[str] = Field(description="A list of 2-4 topic tags (e.g., 'Model Architecture', 'Funding', 'Regulation', 'Cybersecurity').")
 
@@ -80,8 +81,8 @@ def analyze_articles(state: PipelineState) -> PipelineState:
             
         logger.info(f"Analyzing article {idx}/{total_articles}: {article.title}")
         
-        # Truncate content to 1200 chars to reduce context noise and prevent topic contamination
-        truncated_content = article.content[:1200]
+        # Truncate content to MAX_CONTENT_LENGTH to reduce context noise and prevent topic contamination
+        truncated_content = article.content[:MAX_CONTENT_LENGTH]
         
         # Route to the appropriate processing chain
         chain = github_chain if article.source == "github" else news_chain
@@ -135,6 +136,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
             # Mutate Pydantic article object in-place
             if analysis:
                 article.summary = analysis.summary
+                article.details = analysis.details
                 article.why_it_matters = analysis.why_it_matters
                 article.tags = analysis.tags
             
@@ -146,6 +148,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
             
             # Fallback to keep the pipeline stable
             article.summary = "Summary generation failed."
+            article.details = []
             article.why_it_matters = "Analysis failed."
             article.tags = []
             

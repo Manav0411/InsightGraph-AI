@@ -8,7 +8,7 @@ export default function IntelligenceReader() {
   const { user, getToken } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [history, setHistory] = useState([]);
+  const [selectedArticle, setSelectedArticle] = useState(null);
 
   useEffect(() => {
     const fetchLatest = async () => {
@@ -16,17 +16,10 @@ export default function IntelligenceReader() {
         const token = await getToken();
         const headers = { 'Authorization': `Bearer ${token}` };
         
-        const [resLatest, resHistory] = await Promise.all([
-          fetch(`${API_BASE_URL}/newsletter/latest`, { headers }),
-          fetch(`${API_BASE_URL}/newsletter/history`, { headers })
-        ]);
+        const resLatest = await fetch(`${API_BASE_URL}/newsletter/latest`, { headers });
         if (resLatest.ok) {
           const json = await resLatest.json();
           setData(json);
-        }
-        if (resHistory.ok) {
-          const json = await resHistory.json();
-          setHistory(json);
         }
       } catch (e) {
         console.error("Failed to fetch data:", e);
@@ -36,6 +29,16 @@ export default function IntelligenceReader() {
     };
     if (user?.id) fetchLatest();
   }, [user?.id, getToken]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (selectedArticle) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; }
+  }, [selectedArticle]);
 
   if (loading) {
     return (
@@ -49,100 +52,210 @@ export default function IntelligenceReader() {
   }
 
   const articles = data?.articles || [];
+  const featuredArticle = articles.length > 0 ? articles[0] : null;
+  const gridArticles = articles.length > 1 ? articles.slice(1) : [];
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col gap-16 relative pb-24">
-      
-      {/* Header */}
-      <header className="flex flex-col items-center text-center border-b border-outline-variant/30 pb-10 pt-4">
-        <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-4">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </div>
-        <h1 className="font-headline text-5xl md:text-6xl font-bold text-on-surface tracking-tight leading-tight mb-4">
-          {data?.briefing?.title || "Intelligence Briefing"}
-        </h1>
-        <p className="text-on-surface-variant text-lg font-medium max-w-2xl">
-          Your weekly dose of the most important AI updates
-        </p>
-      </header>
+    <>
+      <div className="w-full max-w-[1200px] mx-auto px-5 md:px-8 flex flex-col gap-16 relative pb-24">
+        
+        {/* Header */}
+        <header className="flex flex-col items-center text-center border-b border-outline-variant/30 pb-10 pt-4">
+          <div className="px-4 py-1.5 bg-surface-variant/40 rounded-lg text-[11px] font-bold text-primary uppercase tracking-widest mb-6">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
+          <h1 className="font-headline text-5xl md:text-7xl font-bold text-on-surface tracking-tight leading-none mb-6">
+            {data?.briefing?.title || "Intelligence Briefing"}
+          </h1>
+          <p className="text-on-surface-variant text-xl font-medium max-w-2xl">
+            Thoughts, insights, and high-signal data from the AI frontier. Take a peek into the evolving ecosystem.
+          </p>
+        </header>
 
-      {articles.length > 0 ? (
-        <div className="flex flex-col gap-12">
-          {articles.map((article, idx) => (
-            <article key={idx} className="bg-surface-container-low rounded-3xl p-8 md:p-10 border border-outline-variant/20 shadow-sm relative overflow-hidden group hover:border-primary/30 transition-colors duration-500">
-              
-              {/* Top Meta Info */}
-              <div className="flex flex-wrap items-center gap-3 mb-6">
-                <span className="px-3 py-1 bg-surface-variant/50 rounded-full font-bold uppercase tracking-wider text-[11px] text-on-surface-variant">
-                  {article.source}
-                </span>
-                {article.grounding_verified && (
-                  <span className="text-[11px] text-primary flex items-center gap-1 font-bold uppercase tracking-wider bg-primary/10 px-3 py-1 rounded-full">
-                    <span className="material-symbols-outlined text-[14px]">verified</span> Grounded
-                  </span>
-                )}
-                <div className="flex-1"></div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Trend Strength</span>
-                  <div className="flex gap-0.5 h-2">
-                    <div className={`w-1.5 rounded-full ${article.trend_score > 3 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
-                    <div className={`w-1.5 rounded-full ${article.trend_score > 5 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
-                    <div className={`w-1.5 rounded-full ${article.trend_score > 7 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
-                    <div className={`w-1.5 rounded-full ${article.trend_score > 8.5 ? 'bg-tertiary' : 'bg-surface-variant'}`}></div>
+        {articles.length === 0 ? (
+          <div className="text-center py-24 text-on-surface-variant">
+            <span className="material-symbols-outlined text-5xl text-outline-variant mb-4 opacity-50">article</span>
+            <p className="font-medium text-lg">No intelligence briefing available.</p>
+            <a href="/mission-control" className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-md hover:bg-primary/90 transition-colors">
+              <span className="material-symbols-outlined text-[20px]">bolt</span> Go to Mission Control to Synthesize
+            </a>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-16">
+            {/* Featured Post (Top 1) */}
+            {featuredArticle && (
+              <article 
+                onClick={() => setSelectedArticle(featuredArticle)}
+                className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 cursor-pointer group items-center"
+              >
+                {/* Featured Image */}
+                <div className="relative aspect-[16/10] overflow-hidden rounded-2xl md:rounded-[2rem] w-full bg-surface-variant/30">
+                  {featuredArticle.image_url ? (
+                    <img 
+                      src={featuredArticle.image_url} 
+                      alt={featuredArticle.title} 
+                      className="w-full h-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-105" 
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-30 text-2xl font-headline">No Image</div>
+                  )}
+                  {/* Hover Brackets & Overlay */}
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-6xl opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-500 delay-100">add</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Title */}
-              <h2 className="font-headline text-3xl md:text-4xl font-bold leading-tight text-on-surface tracking-tight mb-6">
-                {article.title}
-              </h2>
-
-              {/* Summary */}
-              <p className="font-body text-on-surface-variant text-lg leading-relaxed mb-8">
-                {article.summary}
-              </p>
-
-              {/* Why It Matters (Highlighted) */}
-              {article.why_it_matters && (
-                <div className="bg-gradient-to-br from-surface-container to-transparent border-l-4 border-tertiary p-6 rounded-r-2xl mb-8 relative">
-                  <h3 className="text-xs font-bold text-tertiary uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px]">psychology</span> Why It Matters
-                  </h3>
-                  <p className="font-headline text-xl text-on-surface leading-snug">
-                    {article.why_it_matters}
+                {/* Featured Content */}
+                <div className="flex flex-col justify-center">
+                  <div className="flex items-center gap-3 mb-5">
+                    <span className="px-3 py-1 bg-primary/10 text-primary rounded-full font-bold uppercase tracking-wider text-[11px]">
+                      Featured Signal
+                    </span>
+                    <span className="text-[12px] font-bold text-on-surface-variant uppercase tracking-widest">{featuredArticle.source}</span>
+                  </div>
+                  
+                  <h2 className="font-headline text-4xl md:text-5xl font-bold leading-[1.1] text-on-surface tracking-tight mb-6 group-hover:text-primary transition-colors duration-300">
+                    {featuredArticle.title}
+                  </h2>
+                  <p className="font-body text-on-surface-variant text-lg leading-relaxed mb-8 line-clamp-3">
+                    {featuredArticle.summary}
                   </p>
+                  
+                  <div className="flex flex-wrap items-center gap-2">
+                    {featuredArticle.tags?.map(tag => (
+                      <span key={tag} className="text-xs font-semibold text-outline px-2.5 py-1 bg-surface-container rounded-md border border-outline-variant/30">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            )}
+
+            {/* Grid Posts */}
+            {gridArticles.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+                {gridArticles.map((article, idx) => (
+                  <article 
+                    key={idx} 
+                    onClick={() => setSelectedArticle(article)}
+                    className="flex flex-col cursor-pointer group"
+                  >
+                    {/* Image Block */}
+                    <div className="relative aspect-[16/10] overflow-hidden rounded-2xl mb-5 bg-surface-variant/30">
+                      {article.image_url ? (
+                        <img 
+                          src={article.image_url} 
+                          alt={article.title} 
+                          className="w-full h-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-105" 
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-30 font-headline">No Image</div>
+                      )}
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none flex items-center justify-center">
+                         <span className="material-symbols-outlined text-white text-5xl opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-500 delay-75">add</span>
+                      </div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{article.source}</span>
+                      <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
+                      <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{article.trend_score.toFixed(1)} TREND</span>
+                    </div>
+                    <h3 className="font-headline text-2xl font-bold leading-tight text-on-surface mb-3 group-hover:text-primary transition-colors duration-300 line-clamp-3">
+                      {article.title}
+                    </h3>
+                    <p className="font-body text-on-surface-variant text-[15px] leading-relaxed mb-4 line-clamp-2">
+                      {article.summary}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Article Details Modal */}
+      {selectedArticle && (
+        <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/60 backdrop-blur-sm p-4 md:p-6 transition-opacity duration-300">
+          <div className="w-full max-w-4xl bg-surface max-h-[90vh] overflow-y-auto shadow-2xl rounded-3xl md:rounded-[2.5rem] border border-outline-variant/20 flex flex-col relative transform transition-all duration-500 opacity-100 scale-100">
+            <div className="p-6 md:p-12 flex-1 flex flex-col">
+              
+              {/* Modal Header */}
+              <div className="flex justify-between items-start mb-10 gap-6">
+                <h2 className="font-headline text-3xl md:text-5xl font-bold leading-[1.1] tracking-tight">{selectedArticle.title}</h2>
+                <button 
+                  onClick={() => setSelectedArticle(null)} 
+                  className="w-12 h-12 flex items-center justify-center bg-surface-container hover:bg-surface-variant hover:text-primary rounded-full shrink-0 transition-colors shadow-sm"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+              
+              {/* Large Image */}
+              {selectedArticle.image_url && (
+                <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden mb-10 shadow-sm bg-surface-variant/30">
+                  <img src={selectedArticle.image_url} className="w-full h-full object-cover" alt="Article Hero" />
                 </div>
               )}
 
-              {/* Footer Meta & Link */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-6 border-t border-outline-variant/20 mt-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  {article.tags?.slice(0, 3).map(tag => (
-                    <span key={tag} className="px-3 py-1.5 bg-surface rounded-full font-bold uppercase tracking-wider text-[10px] text-on-surface-variant border border-outline-variant/20">
-                      #{tag}
-                    </span>
-                  ))}
+              {/* At a Glance */}
+              <h3 className="text-xl md:text-2xl font-bold italic mb-4 font-headline text-on-surface">At a Glance</h3>
+              <p className="text-on-surface-variant text-[16px] md:text-lg leading-relaxed mb-10">
+                {selectedArticle.summary}
+              </p>
+
+              {/* Details (Bullet Points) */}
+              {selectedArticle.details && selectedArticle.details.length > 0 && (
+                <>
+                  <h3 className="text-xl md:text-2xl font-bold italic mb-4 font-headline text-on-surface">Details</h3>
+                  <ul className="list-none mb-10 space-y-4">
+                    {selectedArticle.details.map((detail, idx) => (
+                      <li key={idx} className="flex items-start gap-4 text-on-surface-variant text-[16px] md:text-[17px] leading-relaxed">
+                        <span className="material-symbols-outlined text-primary text-[20px] mt-0.5 shrink-0">emergency</span>
+                        {detail}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              {/* Why It Matters */}
+              {selectedArticle.why_it_matters && (
+                <>
+                  <h3 className="text-xl md:text-2xl font-bold italic mb-4 font-headline text-on-surface">Why It Matters</h3>
+                  <div className="bg-primary/5 border border-primary/20 p-6 md:p-8 rounded-3xl mb-10">
+                    <p className="text-on-surface font-medium text-[16px] md:text-lg leading-relaxed">
+                      {selectedArticle.why_it_matters}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Meta Footer */}
+              <div className="mt-auto pt-8 border-t border-outline-variant/30 flex flex-col gap-3">
+                <div className="text-[15px] font-bold text-on-surface-variant flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                  When : {new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
                 </div>
-                <a href={article.url} target="_blank" rel="noreferrer" 
-                   className="inline-flex items-center gap-2 text-primary font-bold text-sm hover:text-tertiary transition-colors group/link">
-                  Read Full Source <span className="material-symbols-outlined text-[18px] transform group-hover/link:translate-x-1 transition-transform">arrow_forward</span>
+                <a 
+                  href={selectedArticle.url} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="inline-flex items-center gap-2 text-[15px] font-bold text-on-surface underline decoration-outline-variant underline-offset-4 hover:text-primary transition-colors w-fit"
+                >
+                  <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                  Source
                 </a>
               </div>
 
-            </article>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-24 text-on-surface-variant">
-          <span className="material-symbols-outlined text-5xl text-outline-variant mb-4 opacity-50">article</span>
-          <p className="font-medium text-lg">No intelligence briefing available.</p>
-          <a href="/mission-control" className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-md hover:bg-primary/90 transition-colors">
-            <span className="material-symbols-outlined text-[20px]">bolt</span> Go to Mission Control to Synthesize
-          </a>
+            </div>
+          </div>
         </div>
       )}
 
-    </div>
+    </>
   );
 }

@@ -79,7 +79,9 @@ async def run_newsletter_workflow(request: NewsletterRequest, db: Session) -> Ne
         all_articles.append(ArticleResponse(
             title=a.title,
             url=a.url,
+            image_url=a.image_url,
             summary=a.summary or "",
+            details=a.details or [],
             why_it_matters=a.why_it_matters or "",
             source=a.source,
             tags=a.tags,

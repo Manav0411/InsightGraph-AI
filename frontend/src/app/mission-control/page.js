@@ -106,42 +106,59 @@ export default function CommandCenter() {
       const decoder = new TextDecoder("utf-8");
       
       let stagesCount = 0;
+      let buffer = '';
       
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+            // Process any remaining buffer
+            if (buffer.startsWith('data: ')) {
+                try {
+                    const dataStr = buffer.substring(6).trim();
+                    if (dataStr) JSON.parse(dataStr);
+                } catch(e) {}
+            }
+            break;
+        }
         
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\\n');
+        buffer += decoder.decode(value, { stream: true });
         
-        for (const line of lines) {
+        let newlineIndex;
+        while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
+          const line = buffer.slice(0, newlineIndex).trim();
+          buffer = buffer.slice(newlineIndex + 1);
+          
           if (line.startsWith('data: ')) {
-            const dataStr = line.substring(6);
+            const dataStr = line.substring(6).trim();
             if (dataStr) {
-              const eventData = JSON.parse(dataStr);
-              
-              if (eventData.status === 'started') {
-                stagesCount++;
-                const newLog = `[AGENT] INFO: Started ${eventData.stage}`;
-                currentLogs = [...currentLogs, newLog].slice(-4);
+              try {
+                const eventData = JSON.parse(dataStr);
                 
-                setGenerateProgress(prev => ({
-                  ...prev,
-                  stage: eventData.stage,
-                  log: currentLogs,
-                  progress: Math.min((stagesCount / 6) * 100, 95)
-                }));
-              } else if (eventData.stage === 'Done') {
-                clearInterval(timerInterval);
-                setGenerateProgress(prev => ({ ...prev, progress: 100, stage: 'Complete' }));
-                setTimeout(() => {
-                  window.location.href = '/';
-                }, 2500);
-              } else if (eventData.stage === 'Error') {
-                clearInterval(timerInterval);
-                currentLogs = [...currentLogs, `[SYS] ERROR: ${eventData.error}`].slice(-4);
-                setGenerateProgress(prev => ({ ...prev, stage: 'Failed', log: currentLogs }));
-                setTimeout(() => setIsGenerating(false), 3000);
+                if (eventData.status === 'started') {
+                  stagesCount++;
+                  const newLog = `[AGENT] INFO: Started ${eventData.stage}`;
+                  currentLogs = [...currentLogs, newLog].slice(-4);
+                  
+                  setGenerateProgress(prev => ({
+                    ...prev,
+                    stage: eventData.stage,
+                    log: currentLogs,
+                    progress: Math.min((stagesCount / 6) * 100, 95)
+                  }));
+                } else if (eventData.stage === 'Done') {
+                  clearInterval(timerInterval);
+                  setGenerateProgress(prev => ({ ...prev, progress: 100, stage: 'Complete' }));
+                  setTimeout(() => {
+                    window.location.href = '/';
+                  }, 2500);
+                } else if (eventData.stage === 'Error') {
+                  clearInterval(timerInterval);
+                  currentLogs = [...currentLogs, `[SYS] ERROR: ${eventData.error}`].slice(-4);
+                  setGenerateProgress(prev => ({ ...prev, stage: 'Failed', log: currentLogs }));
+                  setTimeout(() => setIsGenerating(false), 3000);
+                }
+              } catch (e) {
+                console.error("Failed to parse SSE JSON chunk:", e, dataStr);
               }
             }
           }

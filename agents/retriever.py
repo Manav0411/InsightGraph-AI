@@ -91,6 +91,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
                 url=raw.get("url", ""),
                 content=raw.get("content", ""),
                 source=raw.get("source", "unknown"),
+                image_url=raw.get("image_url", None),
                 stars=raw.get("stars", None)
             )
             state.articles.append(article)
