@@ -14,8 +14,10 @@ class Article(Base):
     title = Column(String, nullable=False)
     source = Column(String, nullable=False)
     url = Column(String, nullable=False)
+    image_url = Column(String, nullable=True)
     
     summary = Column(Text, nullable=True)
+    details = Column(JSONB, default=list)
     why_it_matters = Column(Text, nullable=True)
     
     trend_score = Column(Float, default=0.0)

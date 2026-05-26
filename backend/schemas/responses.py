@@ -12,7 +12,9 @@ class TrustMetrics(BaseModel):
 class ArticleResponse(BaseModel):
     title: str
     url: str
+    image_url: Optional[str] = None
     summary: str
+    details: List[str] = []
     why_it_matters: str
     source: str
     tags: List[str]

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 import asyncio
+import json
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from backend.schemas.requests import NewsletterRequest
@@ -97,7 +98,9 @@ async def get_historical_briefing(briefing_id: str, db: Session = Depends(get_db
                 "title": a.title,
                 "source": a.source,
                 "url": a.url,
+                "image_url": a.image_url,
                 "summary": a.summary,
+                "details": a.details,
                 "why_it_matters": a.why_it_matters,
                 "trend_score": a.trend_score,
                 "tags": a.tags,
@@ -169,7 +172,8 @@ async def generate_newsletter_stream(request: NewsletterRequest, db: Session = D
             
             yield f"data: {{\"stage\": \"Done\", \"status\": \"completed\", \"result\": \"success\"}}\\n\\n"
         except Exception as e:
-            yield f"data: {{\"stage\": \"Error\", \"status\": \"failed\", \"error\": \"{str(e)}\"}}\\n\\n"
+            error_payload = json.dumps({"stage": "Error", "status": "failed", "error": str(e)})
+            yield f"data: {error_payload}\n\n"
             
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

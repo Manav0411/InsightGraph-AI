@@ -39,6 +39,7 @@ def fetch_github_trends(max_results: int = 10, topics: List[str] = None) -> List
             results.append({
                 "title": item.get("name", ""),
                 "url": item.get("html_url", ""),
+                "image_url": f"https://opengraph.githubassets.com/1/{item.get('full_name')}" if item.get("full_name") else None,
                 "content": item.get("description", "") or "No description provided.",
                 "source": "github",
                 "stars": item.get("stargazers_count", 0)

@@ -52,7 +52,8 @@ export default function HistoryPage() {
       try {
         const token = await getToken();
         const res = await fetch(`${API_BASE_URL}/newsletter/history`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${token}` },
+          cache: 'no-store'
         });
         if (res.ok) {
           const json = await res.json();

@@ -43,21 +43,30 @@ def fetch_ai_news(queries: List[str] = None, max_results: int = 5) -> List[Dict[
                 topic="news",
                 days=7,
                 max_results=max_results,
-                include_raw_content=False
+                include_raw_content=True,
+                include_images=True
             )
             
             results = response.get("results", [])
-            print(f"Retrieved {len(results)} articles")
+            images = response.get("images", [])
+            print(f"Retrieved {len(results)} articles and {len(images)} images")
             
-            for result in results:
-                raw_content = result.get("content", "")
-                cleaned = clean_html_noise(raw_content)
+            for i, result in enumerate(results):
+                # Fallback to standard content if raw_content is too short or missing
+                raw = result.get("raw_content", "")
+                if not raw or len(raw) < 500:
+                    raw = result.get("content", "")
+                
+                cleaned = clean_html_noise(raw)
                 normalized = normalize_content(cleaned)
+                
+                image_url = images[i] if i < len(images) else f"https://picsum.photos/seed/{hash(result.get('title', 'ai'))}/1600/900"
                 
                 all_results.append({
                     "title": result.get("title", ""),
                     "url": result.get("url", ""),
                     "content": normalized,
+                    "image_url": image_url,
                     "source": "tavily"
                 })
         except Exception as e:

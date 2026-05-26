@@ -31,9 +31,11 @@ class Article(BaseModel):
 
     # Source information
     source: str
+    image_url: Optional[str] = None
 
     # AI-generated fields
     summary: Optional[str] = None
+    details: List[str] = Field(default_factory=list)
     why_it_matters: Optional[str] = None
 
     # Classification
