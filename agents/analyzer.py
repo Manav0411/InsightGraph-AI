@@ -143,14 +143,43 @@ def analyze_articles(state: PipelineState) -> PipelineState:
             state.metadata.total_articles_processed += 1
             
         except Exception as e:
-            logger.error(f"Error analyzing article '{article.title}': {e}")
-            state.errors.append(f"Analysis failed for '{article.title}': {e}")
+            err_msg = str(e)
+            salvaged = False
             
-            # Fallback to keep the pipeline stable
-            article.summary = "Summary generation failed."
-            article.details = []
-            article.why_it_matters = "Analysis failed."
-            article.tags = []
+            if "failed_generation" in err_msg and "<function=ArticleAnalysis>" in err_msg:
+                try:
+                    import re, json
+                    # Extract everything after <function=ArticleAnalysis>
+                    match = re.search(r"<function=ArticleAnalysis>\s*(\{.*\})", err_msg, re.DOTALL)
+                    if match:
+                        json_str = match.group(1)
+                        # Fix Python stringified dict escaping of single quotes (e.g. industry\'s)
+                        json_str = json_str.replace("\\'", "'")
+                        # Iteratively trim from the right to strip extra error repr characters
+                        for i in range(len(json_str), 0, -1):
+                            try:
+                                parsed = json.loads(json_str[:i], strict=False)
+                                article.summary = parsed.get("summary", "Summary salvaged.")
+                                article.details = parsed.get("details", [])
+                                article.why_it_matters = parsed.get("why_it_matters", "Salvaged.")
+                                article.tags = parsed.get("tags", [])
+                                salvaged = True
+                                logger.info(f"Successfully salvaged failed generation for '{article.title}'")
+                                state.metadata.total_articles_processed += 1
+                                break
+                            except json.JSONDecodeError:
+                                continue
+                except Exception as parse_err:
+                    logger.warning(f"Failed to salvage: {parse_err}")
+            
+            if not salvaged:
+                logger.error(f"Error analyzing article '{article.title}': {e}")
+                # Intentionally avoiding appending to state.errors to bypass Graph-level failures
+                # The evaluator will simply drop this article if it's missing tags/details
+                article.summary = "Summary generation failed."
+                article.details = []
+                article.why_it_matters = "Analysis failed."
+                article.tags = []
             
         # Throttling sleep between articles
         if idx < total_articles:

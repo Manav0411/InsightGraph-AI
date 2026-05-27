@@ -27,7 +27,9 @@ export function ClerkThemeProvider({ children }) {
           borderRadius: '16px'
         },
         elements: {
-          card: "bg-surface-container shadow-2xl border border-outline-variant/30 rounded-[2rem]",
+          rootBox: "rounded-2xl overflow-hidden",
+          cardBox: "rounded-2xl overflow-hidden",
+          card: "bg-surface-container shadow-2xl border border-outline-variant/30 rounded-2xl overflow-hidden",
           headerTitle: "font-headline text-4xl font-bold text-on-surface tracking-tight",
           headerSubtitle: "text-on-surface-variant font-body text-lg",
           socialButtonsBlockButton: "bg-surface border border-outline-variant/40 hover:bg-surface-variant text-on-surface transition-colors rounded-xl py-3 shadow-sm",

@@ -68,7 +68,7 @@ export default function IntelligenceReader() {
             {data?.briefing?.title || "Intelligence Briefing"}
           </h1>
           <p className="text-on-surface-variant text-xl font-medium max-w-2xl">
-            Thoughts, insights, and high-signal data from the AI frontier. Take a peek into the evolving ecosystem.
+            Curated signals and strategic analysis from the AI ecosystem, tailored to your intelligence profile.
           </p>
         </header>
 

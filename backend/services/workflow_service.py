@@ -11,7 +11,7 @@ from backend.schemas.requests import NewsletterRequest
 
 logger = logging.getLogger("api_workflow")
 
-async def run_newsletter_workflow(request: NewsletterRequest, db: Session) -> NewsletterResponse:
+async def run_newsletter_workflow(request: NewsletterRequest, user_profile, task_id: str = None) -> NewsletterResponse:
     """
     Wraps the LangGraph orchestration.
     Runs the pipeline synchronously since LangGraph execution blocks,
@@ -20,8 +20,7 @@ async def run_newsletter_workflow(request: NewsletterRequest, db: Session) -> Ne
     user_id = request.user_id
     logger.info(f"[API] Newsletter generation requested for user: {user_id}")
     
-    # 1. Load User Profile natively from DB
-    user_profile = get_user_profile_pydantic(db, user_id)
+    # 2. Initialize State
     
     # 2. Initialize State
     initial_state = PipelineState(
@@ -32,9 +31,18 @@ async def run_newsletter_workflow(request: NewsletterRequest, db: Session) -> Ne
     graph = create_newsletter_graph()
     
     start_time = time.perf_counter()
-    # Note: For fully async execution, we could use graph.ainvoke if all nodes were async.
-    # Since our agents are synchronous, we'll use invoke.
-    final_state = graph.invoke(initial_state)
+    
+    if task_id:
+        from backend.services.task_manager import update_task_stage
+        final_state = None
+        # Use stream_mode="values" to get the full state after every node executes
+        async for state_value in graph.astream(initial_state, stream_mode="values"):
+            stage = state_value.get("pipeline_stage", "Initializing...")
+            update_task_stage(task_id, f"Running: {stage}")
+            final_state = state_value
+    else:
+        final_state = await graph.ainvoke(initial_state)
+        
     end_time = time.perf_counter()
     
     execution_time = round(end_time - start_time, 2)

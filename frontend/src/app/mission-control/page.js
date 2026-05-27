@@ -74,7 +74,7 @@ export default function CommandCenter() {
 
   const generateBriefing = async () => {
     setIsGenerating(true);
-    setGenerateProgress({ stage: 'Initializing...', log: [], elapsed: '0.0s', progress: 0 });
+    setGenerateProgress({ stage: 'Initializing Task...', log: [], elapsed: '0.0s', progress: 0 });
     const startTime = Date.now();
     let currentLogs = [];
     
@@ -85,91 +85,77 @@ export default function CommandCenter() {
 
     try {
       const token = await getToken();
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s global timeout for stream
-
-      const response = await fetch(`${API_BASE_URL}/newsletter/generate-stream`, {
+      
+      // 1. Trigger the background task
+      const initialResponse = await fetch(`${API_BASE_URL}/newsletter/generate-async`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        signal: controller.signal,
-        body: JSON.stringify({ 
-          user_id: user.id
-        })
+        body: JSON.stringify({ user_id: user.id })
       });
       
-      clearTimeout(timeoutId);
+      if (!initialResponse.ok) {
+        throw new Error('Failed to start generation task');
+      }
       
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
+      const { task_id } = await initialResponse.json();
       
       let stagesCount = 0;
-      let buffer = '';
+      let lastStage = '';
       
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-            // Process any remaining buffer
-            if (buffer.startsWith('data: ')) {
-                try {
-                    const dataStr = buffer.substring(6).trim();
-                    if (dataStr) JSON.parse(dataStr);
-                } catch(e) {}
-            }
-            break;
-        }
-        
-        buffer += decoder.decode(value, { stream: true });
-        
-        let newlineIndex;
-        while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
-          const line = buffer.slice(0, newlineIndex).trim();
-          buffer = buffer.slice(newlineIndex + 1);
+      // 2. Poll the status endpoint every 3 seconds
+      const pollInterval = setInterval(async () => {
+        try {
+          const currentToken = await getToken();
+          const statusResponse = await fetch(`${API_BASE_URL}/newsletter/status/${task_id}`, {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+          });
           
-          if (line.startsWith('data: ')) {
-            const dataStr = line.substring(6).trim();
-            if (dataStr) {
-              try {
-                const eventData = JSON.parse(dataStr);
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            
+            if (statusData.status === 'running') {
+              if (statusData.stage !== lastStage) {
+                stagesCount++;
+                lastStage = statusData.stage;
+                const newLog = `[AGENT] INFO: ${statusData.stage}`;
+                currentLogs = [...currentLogs, newLog].slice(-4);
                 
-                if (eventData.status === 'started') {
-                  stagesCount++;
-                  const newLog = `[AGENT] INFO: Started ${eventData.stage}`;
-                  currentLogs = [...currentLogs, newLog].slice(-4);
-                  
-                  setGenerateProgress(prev => ({
-                    ...prev,
-                    stage: eventData.stage,
-                    log: currentLogs,
-                    progress: Math.min((stagesCount / 6) * 100, 95)
-                  }));
-                } else if (eventData.stage === 'Done') {
-                  clearInterval(timerInterval);
-                  setGenerateProgress(prev => ({ ...prev, progress: 100, stage: 'Complete' }));
-                  setTimeout(() => {
-                    window.location.href = '/';
-                  }, 2500);
-                } else if (eventData.stage === 'Error') {
-                  clearInterval(timerInterval);
-                  currentLogs = [...currentLogs, `[SYS] ERROR: ${eventData.error}`].slice(-4);
-                  setGenerateProgress(prev => ({ ...prev, stage: 'Failed', log: currentLogs }));
-                  setTimeout(() => setIsGenerating(false), 3000);
-                }
-              } catch (e) {
-                console.error("Failed to parse SSE JSON chunk:", e, dataStr);
+                setGenerateProgress(prev => ({
+                  ...prev,
+                  stage: statusData.stage,
+                  log: currentLogs,
+                  progress: Math.min((stagesCount / 6) * 100, 95)
+                }));
               }
+            } else if (statusData.status === 'completed') {
+              clearInterval(pollInterval);
+              clearInterval(timerInterval);
+              setGenerateProgress(prev => ({ ...prev, progress: 100, stage: 'Complete' }));
+              setTimeout(() => {
+                window.location.href = '/';
+              }, 2500);
+            } else if (statusData.status === 'failed') {
+              clearInterval(pollInterval);
+              clearInterval(timerInterval);
+              currentLogs = [...currentLogs, `[SYS] ERROR: ${statusData.error}`].slice(-4);
+              setGenerateProgress(prev => ({ ...prev, stage: 'Failed', log: currentLogs }));
+              setTimeout(() => setIsGenerating(false), 5000);
             }
           }
+        } catch (pollErr) {
+          console.error("Polling error:", pollErr);
+          // Don't fail the whole process on a single missed poll, just keep trying
         }
-      }
+      }, 3000);
+      
     } catch (error) {
-      console.error('SSE Error:', error);
+      console.error('Generation Error:', error);
       clearInterval(timerInterval);
       
-      const errorMsg = error.name === 'AbortError' ? 'Stream timed out' : 'Network error';
-      currentLogs = [...currentLogs, `[SYS] ERROR: ${errorMsg}. Signal synthesis interrupted.`].slice(-4);
+      currentLogs = [...currentLogs, `[SYS] ERROR: ${error.message}. Signal synthesis interrupted.`].slice(-4);
       setGenerateProgress(prev => ({ ...prev, stage: 'Failed', log: currentLogs }));
       
       // Let user read the error before resetting
@@ -359,7 +345,7 @@ export default function CommandCenter() {
                     <span>
                       {new Date(run.generated_at.endsWith('Z') ? run.generated_at : run.generated_at + 'Z').toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    <span className="text-primary">{run.metrics?.avg_sqi?.toFixed(1) || 'N/A'} SQI</span>
+                    <span className="text-primary">{run.signal_quality_index?.toFixed(1) || 'N/A'} SQI</span>
                   </div>
                   <div className="font-medium text-sm text-on-surface truncate capitalize">
                     {run.dominant_topics?.[0] || 'Ecosystem Shift'}

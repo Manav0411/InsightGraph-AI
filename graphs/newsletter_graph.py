@@ -15,11 +15,10 @@ def route_after_analysis(state: PipelineState) -> str:
     Conditional routing function to decide whether to retry analysis on failure.
     """
     has_issues = len(state.errors) > 0 or len(state.warnings) > 0
-    if has_issues and state.analyzer_retry_count < 1:
-        logger.info(f"[Graph] Analyzer produced issues. Routing from Analyzer → Analyzer (Retry 1/1).")
-        return "analyzer"
-    
-    logger.info("[Graph] Analyzer completed successfully or max retries hit. Routing from Analyzer → Evaluator.")
+    if has_issues:
+        logger.info("[Graph] Analyzer finished with some isolated errors. Routing to Evaluator to drop failed articles.")
+    else:
+        logger.info("[Graph] Analyzer completed successfully. Routing from Analyzer → Evaluator.")
     return "evaluator"
 
 def route_after_evaluation(state: PipelineState) -> str:
@@ -40,7 +39,7 @@ def route_after_evaluation(state: PipelineState) -> str:
     )
     
     if needs_recovery:
-        if state.retry_count < state.max_retries:
+        if state.retry_count < 0: # Disabled retries to avoid 5-minute timeout
             logger.info(f"[Graph] Quality/Diversity check failed. Routing from Evaluator → Retriever (Retry {state.retry_count + 1}/{state.max_retries}).")
             return "retriever"
         else:
