@@ -1,46 +1,64 @@
 import time
-import re
-from models.state import PipelineState
+import os
+import asyncio
+from typing import List, Tuple
+from pydantic import BaseModel, Field
+from langchain_groq import ChatGroq
+from config.models import FAST_MODEL
+from models.state import PipelineState, Article
 from utils.logger import get_logger
 
 logger = get_logger("validator")
 
-def validate_articles(state: PipelineState) -> PipelineState:
+class ValidationResult(BaseModel):
+    is_relevant: bool = Field(description="True if the content genuinely supports and matches the title, False if it is clickbait, unrelated, or a hallucinated summary.")
+
+async def _validate_single_article(llm: ChatGroq, article: Article, sem: asyncio.Semaphore) -> Tuple[Article, bool]:
+    # Bypass GitHub repos as they are intrinsically grounded by their READMEs
+    if article.source == "github":
+        return article, True
+        
+    prompt = (
+        "You are an expert content moderator. Evaluate if the following article content "
+        "genuinely matches its title, or if it is clickbait/unrelated noise.\n\n"
+        f"Title: {article.title}\n"
+        f"Content snippet (first 300 chars): {article.content[:300]}\n\n"
+        "Return a boolean indicating if it is relevant."
+    )
+    
+    async with sem:
+        try:
+            response = await llm.ainvoke(prompt)
+            return article, response.is_relevant
+        except Exception as e:
+            logger.warning(f"[Validator] Validation failed for '{article.title}', defaulting to True: {e}")
+            return article, True
+
+async def validate_articles(state: PipelineState) -> PipelineState:
     """
     Validates retrieved articles to ensure title-content relevance before downstream processing.
-    Filters out noisy or unrelated articles using deterministic heuristics.
+    Filters out noisy or unrelated articles using an ultra-fast LLM semantic check in parallel.
     """
     start_time = time.perf_counter()
     state.pipeline_stage = "validation"
-    logger.info("Validating retrieved articles for grounding...")
+    logger.info("Validating retrieved articles for grounding using FAST_MODEL...")
+    
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        logger.warning("No GROQ_API_KEY found, bypassing LLM validation.")
+        return state
+        
+    # Initialize the fast model with structured output
+    llm = ChatGroq(model=FAST_MODEL, temperature=0.0, api_key=api_key).with_structured_output(ValidationResult)
+    
+    # Run all validation checks in parallel but limit concurrency to prevent 429 Rate Limits
+    sem = asyncio.Semaphore(5)
+    tasks = [_validate_single_article(llm, article, sem) for article in state.articles]
+    results = await asyncio.gather(*tasks)
     
     valid_articles = []
-    
-    # Simple stop words to ignore in keyword extraction
-    stop_words = {"a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or", "with", "is", "are", "was", "were", "it", "this", "that", "by", "as", "from", "be", "how", "what", "why", "new", "about"}
-    
-    for article in state.articles:
-        title = article.title.lower()
-        content = article.content.lower()
-        
-        # Extract keywords from title (alphanumeric only)
-        title_words = re.findall(r'\b\w+\b', title)
-        keywords = {word for word in title_words if word not in stop_words and len(word) > 2}
-        
-        if not keywords:
-            # If no meaningful keywords, let it pass (edge case)
-            article.grounding_verified = True
-            valid_articles.append(article)
-            continue
-            
-        # Count how many title keywords appear in the content
-        match_count = sum(1 for kw in keywords if kw in content)
-        overlap_ratio = match_count / len(keywords)
-        
-        # Require at least some overlap to consider the content grounded to the title
-        # For small titles (1-3 keywords), require at least 1 match. 
-        # For larger titles, require at least 20% overlap.
-        if overlap_ratio >= 0.2 or match_count >= 1:
+    for article, is_relevant in results:
+        if is_relevant:
             article.grounding_verified = True
             valid_articles.append(article)
         else:

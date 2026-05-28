@@ -2,6 +2,8 @@ import os
 import time
 from models.state import PipelineState
 from utils.logger import get_logger
+from langchain_groq import ChatGroq
+from config.models import REASONING_MODEL
 
 logger = get_logger("composer")
 
@@ -27,6 +29,22 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
         markdown_content += f"*Personalized for **{state.user_profile.user_id}**{email_str}*\n\n"
     else:
         markdown_content += "\n"
+        
+    api_key = os.environ.get("GROQ_API_KEY")
+    if api_key and articles:
+        try:
+            logger.info("Generating editorial intro with REASONING_MODEL...")
+            llm = ChatGroq(model=REASONING_MODEL, temperature=0.5, max_tokens=256, api_key=api_key)
+            top_context = "\n".join([f"- {a.title}: {a.summary}" for a in articles[:3]])
+            prompt = (
+                "You are the editor of an elite AI intelligence briefing. Write a 2-3 sentence engaging, "
+                "professional editorial introduction summarizing the overarching theme of these top stories:\n"
+                f"{top_context}\n\nDo not use generic buzzwords. Write directly to the reader. Do not start with greetings like 'Welcome'."
+            )
+            response = llm.invoke(prompt)
+            markdown_content += f"*{response.content.strip()}*\n\n---\n\n"
+        except Exception as e:
+            logger.warning(f"Failed to generate editorial intro: {e}")
         
     # Recommended For You section (top 3 articles with personalization_boost > 0)
     boosted_articles = [a for a in articles if getattr(a, "personalization_boost", 0.0) > 0.0]

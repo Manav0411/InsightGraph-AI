@@ -27,10 +27,12 @@ def rank_articles(state: PipelineState) -> PipelineState:
         title = article.title.lower()
         content = article.content.lower()
         
-        # GitHub specific heuristic: reward highly starred repos
+        # GitHub specific heuristic: reward highly starred repos (Logarithmic scale to prevent score inflation)
         if source == "github":
+            import math
             stars = article.stars or 0
-            score += stars / 1000.0
+            if stars > 0:
+                score += math.log10(stars)  # e.g., 1000 stars -> +3.0, 100,000 stars -> +5.0
             
         # Content keywords heuristics (generic quality markers)
         if "breakthrough" in content or "state-of-the-art" in content or "sota" in content:

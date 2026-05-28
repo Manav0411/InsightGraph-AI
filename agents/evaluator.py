@@ -97,9 +97,42 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
     if avg_trend_score < 2.0:
         logger.warning(f"[Evaluator] Warning: Average trend score is below baseline ({round(avg_trend_score, 2)} < 2.0).")
         
-    # Trim down to the exact requested target size
+    # Trim down to the exact requested target size, enforcing source diversity
     if len(valid_articles) > TARGET_FINAL_ARTICLES:
-        valid_articles = valid_articles[:TARGET_FINAL_ARTICLES]
+        from collections import defaultdict
+        
+        source_groups = defaultdict(list)
+        for a in valid_articles:
+            source_groups[a.source].append(a)
+            
+        final_list = []
+        num_sources = len(source_groups)
+        
+        if num_sources > 0:
+            target_per_source = TARGET_FINAL_ARTICLES // num_sources
+            
+            # Extract up to target_per_source from each group
+            for source, articles in source_groups.items():
+                # Articles are already sorted by trend_score descending from Ranker
+                taken = articles[:target_per_source]
+                final_list.extend(taken)
+                
+                # Remove taken articles from the group
+                source_groups[source] = articles[len(taken):]
+                
+            # Fill remaining slots by merging all unused articles and sorting by score
+            remaining_slots = TARGET_FINAL_ARTICLES - len(final_list)
+            if remaining_slots > 0:
+                unused = []
+                for articles in source_groups.values():
+                    unused.extend(articles)
+                
+                unused.sort(key=lambda x: x.trend_score, reverse=True)
+                final_list.extend(unused[:remaining_slots])
+                
+        # Re-sort the final list by trend score
+        final_list.sort(key=lambda x: x.trend_score, reverse=True)
+        valid_articles = final_list
     
     state.articles = valid_articles
     elapsed_time = round(time.perf_counter() - start_time, 2)

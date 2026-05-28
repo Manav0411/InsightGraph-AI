@@ -6,9 +6,10 @@ import { useUser } from '../../context/UserContext';
 import { API_BASE_URL } from '../../lib/config';
 
 const TOPICS = [
-  "Agentic Workflows", "Open Source LLMs", "AI Hardware", "Multi-Modal AI", 
-  "Retrieval-Augmented Generation", "Ethics & Alignment", "AI in Healthcare", 
-  "AI Startups", "Autonomous Vehicles", "Generative Video"
+  'AI Agents', 'LLM Infrastructure', 'Open Source AI',
+  'AI Research & Papers', 'AI Safety & Alignment', 'AI Coding Assistants',
+  'Enterprise AI', 'AI Startups & Funding', 'Robotics & Embodied AI',
+  'Multimodal AI', 'Synthetic Media'
 ];
 
 export default function Onboarding() {

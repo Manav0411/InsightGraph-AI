@@ -5,10 +5,10 @@ import { API_BASE_URL } from '../../lib/config';
 import { useUser } from '../../context/UserContext';
 
 const SUGGESTED_TOPICS = [
-  'AI Agents', 'Open Source LLMs', 'AI Startups', 'Robotics', 
-  'Coding Assistants', 'MCP Ecosystem', 'Research Papers', 
-  'AI Infrastructure', 'Computer Vision', 'Generative AI', 
-  'AI Security', 'Benchmarking & Evaluation'
+  'AI Agents', 'LLM Infrastructure', 'Open Source AI',
+  'AI Research & Papers', 'AI Safety & Alignment', 'AI Coding Assistants',
+  'Enterprise AI', 'AI Startups & Funding', 'Robotics & Embodied AI',
+  'Multimodal AI', 'Synthetic Media'
 ];
 
 export default function Preferences() {

@@ -4,7 +4,7 @@ from langchain_groq import ChatGroq
 from pydantic import BaseModel, Field
 from typing import List
 from dotenv import load_dotenv
-from config.models import FAST_MODEL
+from config.models import REASONING_MODEL, FAST_MODEL
 from config.settings import MAX_OUTPUT_TOKENS, RETRY_DELAY_SECONDS, MAX_RETRIES, ANALYSIS_THROTTLE_SECONDS, MAX_CONTENT_LENGTH
 from utils.logger import get_logger
 from models.state import PipelineState
@@ -55,8 +55,8 @@ def analyze_articles(state: PipelineState) -> PipelineState:
     
     # Initialize the Groq model
     llm = ChatGroq(
-        model=FAST_MODEL,
-        temperature=0.3,
+        model=REASONING_MODEL,
+        temperature=0.0,
         max_tokens=MAX_OUTPUT_TOKENS,
         api_key=api_key
     )
@@ -114,10 +114,30 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                 except Exception as e:
                     err_msg = str(e)
                     is_rate_limit = "429" in err_msg or "rate_limit" in err_msg or (hasattr(e, "status_code") and e.status_code == 429)
-                    
                     if is_rate_limit:
-                        logger.warning(f"Rate limit hit. Retrying in {RETRY_DELAY_SECONDS}s...")
-                        time.sleep(RETRY_DELAY_SECONDS)
+                        import re
+                        wait_match = re.search(r'Please try again in (\d+\.?\d*)s', err_msg)
+                        
+                        if wait_match:
+                            wait_time = float(wait_match.group(1)) + 1.0
+                            logger.warning(f"Rate limit hit. API requested wait: {wait_time}s. Retrying...")
+                            time.sleep(wait_time)
+                        else:
+                            # TPM or TPD limit hit. Fallback to FAST_MODEL (8B) which has a 5x higher daily limit.
+                            logger.warning(f"Rate limit hit without seconds (likely TPD). Error: {err_msg}. Falling back to FAST_MODEL...")
+                            
+                            fallback_llm = ChatGroq(
+                                model=FAST_MODEL,
+                                temperature=0.0,
+                                max_tokens=MAX_OUTPUT_TOKENS,
+                                api_key=api_key
+                            )
+                            structured_fallback_llm = fallback_llm.with_structured_output(ArticleAnalysis, include_raw=True)
+                            chain = github_prompt | structured_fallback_llm if article.source == "github" else news_prompt | structured_fallback_llm
+                            
+                            # Immediately retry with the fallback chain
+                            continue
+                            
                         retries += 1
                         if retries >= MAX_RETRIES:
                             raise TimeoutError(f"Rate limit retry threshold exceeded for article: {article.title}")
@@ -173,7 +193,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                     logger.warning(f"Failed to salvage: {parse_err}")
             
             if not salvaged:
-                logger.error(f"Error analyzing article '{article.title}': {e}")
+                logger.warning(f"Error analyzing article '{article.title}' (Hallucinated schema): {e}")
                 # Intentionally avoiding appending to state.errors to bypass Graph-level failures
                 # The evaluator will simply drop this article if it's missing tags/details
                 article.summary = "Summary generation failed."

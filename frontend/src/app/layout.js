@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { SignInButton, UserButton } from '@clerk/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import { ClerkThemeProvider } from '../components/ClerkThemeProvider';
+import { Agentation } from "agentation";
 
 export const metadata = {
   title: "InsightGraph - Intelligence Command Center",
@@ -61,6 +62,7 @@ export default async function RootLayout({ children }) {
           </UserProvider>
         </ClerkThemeProvider>
         </ThemeProvider>
+        {process.env.NODE_ENV === "development" && <Agentation />}
       </body>
     </html>
   );
