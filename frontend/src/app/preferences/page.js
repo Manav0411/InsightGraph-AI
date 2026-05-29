@@ -253,7 +253,7 @@ export default function Preferences() {
               onKeyDown={addSource}
               onBlur={() => setIsAddingSource(false)}
               className="w-full mt-6 py-2.5 px-4 text-sm font-semibold text-on-surface bg-surface border border-primary focus:outline-none rounded-lg"
-              placeholder="Type domain (e.g. github) and press Enter..."
+              placeholder="Type domain (e.g. arxiv) and press Enter..."
             />
           ) : (
             <button onClick={() => setIsAddingSource(true)} className="w-full mt-6 py-2.5 text-sm font-semibold text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors border border-primary/10 flex justify-center items-center gap-2">

@@ -9,7 +9,8 @@ from config.settings import MAX_OUTPUT_TOKENS, RETRY_DELAY_SECONDS, MAX_RETRIES,
 from utils.logger import get_logger
 from models.state import PipelineState
 from prompts.news_analysis_prompt import news_prompt
-from prompts.github_analysis_prompt import github_prompt
+from prompts.arxiv_analysis_prompt import arxiv_prompt
+from prompts.community_analysis_prompt import community_prompt
 from backend.services.vector_store import memory_manager
 
 load_dotenv()
@@ -65,7 +66,8 @@ def analyze_articles(state: PipelineState) -> PipelineState:
     structured_llm = llm.with_structured_output(ArticleAnalysis, include_raw=True)
     
     news_chain = news_prompt | structured_llm
-    github_chain = github_prompt | structured_llm
+    arxiv_chain = arxiv_prompt | structured_llm
+    community_chain = community_prompt | structured_llm
     
     # Reset processed count at the start of analysis to prevent double counting on retries
     state.metadata.total_articles_processed = 0
@@ -85,7 +87,12 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         truncated_content = article.content[:MAX_CONTENT_LENGTH]
         
         # Route to the appropriate processing chain
-        chain = github_chain if article.source == "github" else news_chain
+        if article.source == "arxiv":
+            chain = arxiv_chain
+        elif article.source in ["hacker_news", "reddit"]:
+            chain = community_chain
+        else:
+            chain = news_chain
         
         # 1. Retrieve Historical Context from Vector Memory
         history_results = memory_manager.get_historical_context(article.title, state.user_profile.user_id)
@@ -133,7 +140,12 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                                 api_key=api_key
                             )
                             structured_fallback_llm = fallback_llm.with_structured_output(ArticleAnalysis, include_raw=True)
-                            chain = github_prompt | structured_fallback_llm if article.source == "github" else news_prompt | structured_fallback_llm
+                            if article.source == "arxiv":
+                                chain = arxiv_prompt | structured_fallback_llm
+                            elif article.source in ["hacker_news", "reddit"]:
+                                chain = community_prompt | structured_fallback_llm
+                            else:
+                                chain = news_prompt | structured_fallback_llm
                             
                             # Immediately retry with the fallback chain
                             continue

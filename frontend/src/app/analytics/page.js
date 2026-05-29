@@ -59,7 +59,7 @@ export default function Analytics() {
   const { token_trends, latency_trends, fastest_growing_topics, source_distribution } = trendsData;
 
   const topTopic = fastest_growing_topics?.[0]?.topic || "AI Agents";
-  const topSource = source_distribution?.[0]?.source || "GitHub";
+  const topSource = source_distribution?.[0]?.source || "Tavily";
   const avgSqi = (latency_trends.reduce((sum, item) => sum + (item.sqi || 0), 0) / latency_trends.length).toFixed(1);
 
   return (

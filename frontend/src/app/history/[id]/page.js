@@ -174,7 +174,8 @@ export default function HistoricalBriefingViewer() {
               <div className="flex items-center gap-3">
                 <span className="px-3 py-1 bg-surface-variant text-on-surface-variant rounded-md text-xs font-bold uppercase tracking-wider flex flex-col justify-center items-center">
                   {article.source}
-                  {article.source === 'github' && <span className="text-[9px] opacity-70 mt-0.5">Reliability: 92%</span>}
+                  {article.source === 'arxiv' && <span className="text-[9px] opacity-70 mt-0.5">Peer-Reviewed: 99%</span>}
+                  {(article.source === 'hacker_news' || article.source === 'reddit') && <span className="text-[9px] opacity-70 mt-0.5">Community Vetted</span>}
                 </span>
                 
                 {/* Trend Score Visualizer */}

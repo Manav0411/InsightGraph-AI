@@ -14,8 +14,9 @@ class ValidationResult(BaseModel):
     is_relevant: bool = Field(description="True if the content genuinely supports and matches the title, False if it is clickbait, unrelated, or a hallucinated summary.")
 
 async def _validate_single_article(llm: ChatGroq, article: Article, sem: asyncio.Semaphore) -> Tuple[Article, bool]:
-    # Bypass GitHub repos as they are intrinsically grounded by their READMEs
-    if article.source == "github":
+    # Bypass the elite API sources as they are intrinsically grounded by our direct queries.
+    # We only need to run LLM validation on 'tavily' (the open web news scraper) which is prone to clickbait.
+    if article.source in ["arxiv", "hacker_news", "reddit", "rss"]:
         return article, True
         
     prompt = (

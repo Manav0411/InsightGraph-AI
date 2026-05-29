@@ -1,7 +1,15 @@
 import time
 from typing import Dict, Any, List
 from services.tavily_service import fetch_ai_news
-from services.github_service import fetch_github_trends
+from services.arxiv_service import fetch_arxiv_papers
+from services.hacker_news_service import fetch_hacker_news
+from services.reddit_service import fetch_reddit_trends
+from services.rss_service import fetch_rss_feeds
+from config.settings import (
+    ARXIV_MAX_RESULTS, 
+    REDDIT_MAX_RESULTS, 
+    RSS_MAX_RESULTS_PER_FEED
+)
 from models.state import PipelineState, Article
 from utils.logger import get_logger
 
@@ -34,7 +42,10 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
         
     # Scale max results dynamically to fetch deeper when retrying
     tavily_max = 5 + recovery_attempts * 3
-    github_max = 10 + recovery_attempts * 5
+    arxiv_max = ARXIV_MAX_RESULTS + recovery_attempts * 2
+    hn_max = 5 + recovery_attempts * 3
+    reddit_max = REDDIT_MAX_RESULTS + recovery_attempts * 2
+    rss_max = RSS_MAX_RESULTS_PER_FEED
     
     all_articles_raw = []
     
@@ -51,15 +62,41 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
         logger.error(f"Error retrieving from Tavily service: {e}")
         state.errors.append(f"Tavily retrieval failed: {e}")
         
-    # 2. GitHub Integration
+    # 2. Fetch from ArXiv
     try:
-        github_articles = fetch_github_trends(max_results=github_max, topics=user_topics)
-        all_articles_raw.extend(github_articles)
-        if github_articles and "github" not in state.metadata.retrieval_sources:
-            state.metadata.retrieval_sources.append("github")
+        arxiv_articles = fetch_arxiv_papers(topics=user_topics, max_results=arxiv_max)
+        all_articles_raw.extend(arxiv_articles)
+        if arxiv_articles and "arxiv" not in state.metadata.retrieval_sources:
+            state.metadata.retrieval_sources.append("arxiv")
     except Exception as e:
-        logger.error(f"Error retrieving from GitHub service: {e}")
-        state.errors.append(f"GitHub retrieval failed: {e}")
+        logger.error(f"Error retrieving from ArXiv: {e}")
+        
+    # 3. Fetch from Hacker News
+    try:
+        hn_articles = fetch_hacker_news(topics=user_topics, max_results=hn_max)
+        all_articles_raw.extend(hn_articles)
+        if hn_articles and "hacker_news" not in state.metadata.retrieval_sources:
+            state.metadata.retrieval_sources.append("hacker_news")
+    except Exception as e:
+        logger.error(f"Error retrieving from Hacker News: {e}")
+        
+    # 4. Fetch from Reddit
+    try:
+        reddit_articles = fetch_reddit_trends(max_results=reddit_max)
+        all_articles_raw.extend(reddit_articles)
+        if reddit_articles and "reddit" not in state.metadata.retrieval_sources:
+            state.metadata.retrieval_sources.append("reddit")
+    except Exception as e:
+        logger.error(f"Error retrieving from Reddit: {e}")
+        
+    # 5. Fetch from RSS Feeds
+    try:
+        rss_articles = fetch_rss_feeds(max_per_feed=rss_max)
+        all_articles_raw.extend(rss_articles)
+        if rss_articles and "rss" not in state.metadata.retrieval_sources:
+            state.metadata.retrieval_sources.append("rss")
+    except Exception as e:
+        logger.error(f"Error retrieving from RSS: {e}")
         
     # Deduplicate raw fetched articles against themselves based on title.lower()
     deduplicated_raw = []
