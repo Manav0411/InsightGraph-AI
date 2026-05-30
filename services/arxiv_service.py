@@ -30,7 +30,7 @@ def fetch_arxiv_papers(topics: List[str] = None, max_results: int = 10) -> List[
     try:
         logger.info(f"Fetching ArXiv papers with query: {search_query}")
         req = urllib.request.Request(url, headers={'User-Agent': 'InsightGraph/1.0'})
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             xml_data = response.read()
             
         root = ET.fromstring(xml_data)

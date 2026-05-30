@@ -89,7 +89,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         # Route to the appropriate processing chain
         if article.source == "arxiv":
             chain = arxiv_chain
-        elif article.source in ["hacker_news", "reddit"]:
+        elif article.source == "hacker_news":
             chain = community_chain
         else:
             chain = news_chain
@@ -142,7 +142,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                             structured_fallback_llm = fallback_llm.with_structured_output(ArticleAnalysis, include_raw=True)
                             if article.source == "arxiv":
                                 chain = arxiv_prompt | structured_fallback_llm
-                            elif article.source in ["hacker_news", "reddit"]:
+                            elif article.source == "hacker_news":
                                 chain = community_prompt | structured_fallback_llm
                             else:
                                 chain = news_prompt | structured_fallback_llm

@@ -3,11 +3,9 @@ from typing import Dict, Any, List
 from services.tavily_service import fetch_ai_news
 from services.arxiv_service import fetch_arxiv_papers
 from services.hacker_news_service import fetch_hacker_news
-from services.reddit_service import fetch_reddit_trends
 from services.rss_service import fetch_rss_feeds
 from config.settings import (
     ARXIV_MAX_RESULTS, 
-    REDDIT_MAX_RESULTS, 
     RSS_MAX_RESULTS_PER_FEED
 )
 from models.state import PipelineState, Article
@@ -44,7 +42,6 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     tavily_max = 5 + recovery_attempts * 3
     arxiv_max = ARXIV_MAX_RESULTS + recovery_attempts * 2
     hn_max = 5 + recovery_attempts * 3
-    reddit_max = REDDIT_MAX_RESULTS + recovery_attempts * 2
     rss_max = RSS_MAX_RESULTS_PER_FEED
     
     all_articles_raw = []
@@ -80,16 +77,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     except Exception as e:
         logger.error(f"Error retrieving from Hacker News: {e}")
         
-    # 4. Fetch from Reddit
-    try:
-        reddit_articles = fetch_reddit_trends(max_results=reddit_max)
-        all_articles_raw.extend(reddit_articles)
-        if reddit_articles and "reddit" not in state.metadata.retrieval_sources:
-            state.metadata.retrieval_sources.append("reddit")
-    except Exception as e:
-        logger.error(f"Error retrieving from Reddit: {e}")
-        
-    # 5. Fetch from RSS Feeds
+    # 4. Fetch from RSS Feeds
     try:
         rss_articles = fetch_rss_feeds(max_per_feed=rss_max)
         all_articles_raw.extend(rss_articles)

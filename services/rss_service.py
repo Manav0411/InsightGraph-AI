@@ -1,15 +1,18 @@
 import urllib.request
 import xml.etree.ElementTree as ET
+import datetime
+from email.utils import parsedate_to_datetime
 from typing import List, Dict, Any
 from utils.logger import get_logger
+from utils.image_utils import extract_og_image
 
 logger = get_logger("rss_service")
 
 # Official AI Lab Blogs
 RSS_FEEDS = {
     "Hugging Face": "https://huggingface.co/blog/feed.xml",
-    "OpenAI": "https://openai.com/news/rss", # Often redirects/fails based on anti-bot, but best-effort
-    "Google DeepMind": "https://deepmind.google/blog/rss/"
+    "VentureBeat AI": "https://venturebeat.com/category/ai/feed/",
+    "MIT Technology Review AI": "https://technologyreview.com/feed/"
 }
 
 HEADERS = {
@@ -48,6 +51,17 @@ def fetch_rss_feeds(max_per_feed: int = 3) -> List[Dict[str, Any]]:
                 title_elem = item.find('title')
                 link_elem = item.find('link')
                 desc_elem = item.find('description')
+                pub_date = item.findtext('pubDate')
+                
+                # Recency Filter (7 Days)
+                if pub_date:
+                    try:
+                        dt = parsedate_to_datetime(pub_date)
+                        now = datetime.datetime.now(datetime.timezone.utc)
+                        if (now - dt).days > 7:
+                            continue # Skip old articles
+                    except Exception:
+                        pass # Ignore parsing errors and accept it
                 
                 # Handle Atom alternative
                 if title_elem is None:
@@ -77,7 +91,7 @@ def fetch_rss_feeds(max_per_feed: int = 3) -> List[Dict[str, Any]]:
                         "title": f"[{source_name}] {title}",
                         "url": link,
                         "content": description,
-                        "image_url": None,
+                        "image_url": extract_og_image(link),
                         "source": "rss"
                     })
                     count += 1

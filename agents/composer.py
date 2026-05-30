@@ -21,7 +21,9 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
     articles = sorted(state.articles, key=lambda x: x.trend_score, reverse=True)
     
     tavily_articles = [a for a in articles if a.source == "tavily"]
-    github_articles = [a for a in articles if a.source == "github"]
+    arxiv_articles = [a for a in articles if a.source == "arxiv"]
+    hacker_news_articles = [a for a in articles if a.source == "hacker_news"]
+    rss_articles = [a for a in articles if a.source == "rss"]
     
     markdown_content = "# InsightGraph Digest\n> Adaptive AI Intelligence Platform\n\n"
     if state.user_profile:
@@ -63,9 +65,7 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
             boost = article.personalization_boost
             tags = ", ".join(article.tags)
             
-            stars_part = f" (⭐ {article.stars})" if (article.source == "github" and article.stars) else ""
-            
-            markdown_content += f"### {i}. [{title}]({url}){stars_part}\n"
+            markdown_content += f"### {i}. [{title}]({url})\n"
             markdown_content += f"**Trend Score:** {trend_score} *(Personalization Boost: +{boost})*\n"
             markdown_content += f"**Source:** {source}\n"
             if tags:
@@ -93,25 +93,50 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
             markdown_content += f"\n**Summary:** {summary}\n\n"
             markdown_content += f"**Why it matters:** {why_it_matters}\n\n"
             markdown_content += "---\n\n"
-            
-    if github_articles:
-        markdown_content += "## Trending Open Source AI Projects\n\n"
-        for i, article in enumerate(github_articles, 1):
+
+    if arxiv_articles:
+        markdown_content += "## Cutting-Edge Research (ArXiv)\n\n"
+        for i, article in enumerate(arxiv_articles, 1):
             title = article.title
             url = article.url
             summary = article.summary or "No summary available."
             why_it_matters = article.why_it_matters or "No analysis available."
-            source = article.source.capitalize()
-            stars = article.stars or 0
             trend_score = article.trend_score
-            tags = ", ".join(article.tags)
+            
+            markdown_content += f"### {i}. [{title}]({url})\n"
+            markdown_content += f"**Trend Score:** {trend_score}\n"
+            markdown_content += f"\n**Methodology & Findings:** {summary}\n\n"
+            markdown_content += f"**Why it matters:** {why_it_matters}\n\n"
+            markdown_content += "---\n\n"
+
+    if hacker_news_articles:
+        markdown_content += "## Community Pulse (Hacker News)\n\n"
+        for i, article in enumerate(hacker_news_articles, 1):
+            title = article.title
+            url = article.url
+            summary = article.summary or "No summary available."
+            why_it_matters = article.why_it_matters or "No analysis available."
+            trend_score = article.trend_score
+            stars = article.stars or 0
             
             star_label = f" (⭐ {stars})" if stars else ""
             markdown_content += f"### {i}. [{title}]({url}){star_label}\n"
             markdown_content += f"**Trend Score:** {trend_score}\n"
-            markdown_content += f"**Source:** {source}\n"
-            if tags:
-                markdown_content += f"**Tags:** {tags}\n"
+            markdown_content += f"\n**Community Sentiment:** {summary}\n\n"
+            markdown_content += f"**Why it matters:** {why_it_matters}\n\n"
+            markdown_content += "---\n\n"
+
+    if rss_articles:
+        markdown_content += "## Official Lab Announcements\n\n"
+        for i, article in enumerate(rss_articles, 1):
+            title = article.title
+            url = article.url
+            summary = article.summary or "No summary available."
+            why_it_matters = article.why_it_matters or "No analysis available."
+            trend_score = article.trend_score
+            
+            markdown_content += f"### {i}. [{title}]({url})\n"
+            markdown_content += f"**Trend Score:** {trend_score}\n"
             markdown_content += f"\n**Summary:** {summary}\n\n"
             markdown_content += f"**Why it matters:** {why_it_matters}\n\n"
             markdown_content += "---\n\n"
@@ -122,7 +147,6 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
             
     state.final_newsletter = markdown_content
     return state
-
 
 def save_newsletter(markdown_content: str, filepath: str = "output/newsletter.md"):
     """
