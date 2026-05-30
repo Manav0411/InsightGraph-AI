@@ -1,4 +1,5 @@
 import os
+import time
 from tavily import TavilyClient
 from typing import List, Dict, Any
 from dotenv import load_dotenv
@@ -71,5 +72,8 @@ def fetch_ai_news(queries: List[str] = None, max_results: int = 5) -> List[Dict[
                 })
         except Exception as e:
             print(f"Error fetching query '{query}' from Tavily: {e}")
+            
+        # Rate limit protection for free tier
+        time.sleep(0.5)
             
     return all_results

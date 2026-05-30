@@ -42,18 +42,16 @@ def fetch_rss_feeds(max_per_feed: int = 3) -> List[Dict[str, Any]]:
                 # Atom namespace fallback
                 items = root.findall('.//atom:entry', namespace)
                 
-            count = 0
+            feed_articles = []
+            
             for item in items:
-                if count >= max_per_feed:
-                    break
-                    
                 # Handle standard RSS
                 title_elem = item.find('title')
                 link_elem = item.find('link')
                 desc_elem = item.find('description')
                 pub_date = item.findtext('pubDate')
                 
-                # Recency Filter (7 Days)
+                dt = None
                 if pub_date:
                     try:
                         dt = parsedate_to_datetime(pub_date)
@@ -62,7 +60,7 @@ def fetch_rss_feeds(max_per_feed: int = 3) -> List[Dict[str, Any]]:
                             continue # Skip old articles
                     except Exception:
                         pass # Ignore parsing errors and accept it
-                
+                        
                 # Handle Atom alternative
                 if title_elem is None:
                     title_elem = item.find('atom:title', namespace)
@@ -87,14 +85,22 @@ def fetch_rss_feeds(max_per_feed: int = 3) -> List[Dict[str, Any]]:
                 description = re.sub(r'<[^>]+>', ' ', description).strip()
                 
                 if title and link:
-                    all_results.append({
+                    feed_articles.append({
                         "title": f"[{source_name}] {title}",
                         "url": link,
                         "content": description,
                         "image_url": extract_og_image(link),
-                        "source": "rss"
+                        "source": "rss",
+                        "_dt": dt
                     })
-                    count += 1
+                    
+            # Sort by parsed datetime descending
+            feed_articles.sort(key=lambda x: x.get("_dt") or datetime.datetime.min.replace(tzinfo=datetime.timezone.utc), reverse=True)
+            
+            # Slice to max_per_feed and remove the temporary _dt field
+            for article in feed_articles[:max_per_feed]:
+                article.pop("_dt", None)
+                all_results.append(article)
                     
         except Exception as e:
             logger.error(f"Error fetching RSS from {source_name}: {e}")

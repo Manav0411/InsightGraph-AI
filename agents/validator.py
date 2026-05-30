@@ -15,17 +15,24 @@ class ValidationResult(BaseModel):
 
 async def _validate_single_article(llm: ChatGroq, article: Article, sem: asyncio.Semaphore) -> Tuple[Article, bool]:
     # Bypass the elite API sources as they are intrinsically grounded by our direct queries.
-    # We only need to run LLM validation on 'tavily' (the open web news scraper) which is prone to clickbait.
-    if article.source in ["arxiv", "hacker_news", "rss"]:
+    if article.source in ["arxiv", "rss"]:
         return article, True
         
-    prompt = (
-        "You are an expert content moderator. Evaluate if the following article content "
-        "genuinely matches its title, or if it is clickbait/unrelated noise.\n\n"
-        f"Title: {article.title}\n"
-        f"Content snippet (first 300 chars): {article.content[:300]}\n\n"
-        "Return a boolean indicating if it is relevant."
-    )
+    if article.source == "hacker_news":
+        prompt = (
+            "You are an expert content moderator. Evaluate if the following Hacker News post "
+            "is genuinely related to Artificial Intelligence, Machine Learning, or LLMs.\n\n"
+            f"Title: {article.title}\n\n"
+            "Use the provided tool to set is_relevant to true if it is AI-related, false otherwise."
+        )
+    else:
+        prompt = (
+            "You are an expert content moderator. Evaluate if the following article content "
+            "genuinely matches its title, or if it is clickbait/unrelated noise.\n\n"
+            f"Title: {article.title}\n"
+            f"Content snippet (first 300 chars): {article.content[:300]}\n\n"
+            "Use the provided tool to set is_relevant to true if the content is relevant, false otherwise."
+        )
     
     async with sem:
         try:

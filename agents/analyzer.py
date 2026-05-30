@@ -54,20 +54,27 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         state.errors.append(error_msg)
         return state
     
-    # Initialize the Groq model
-    llm = ChatGroq(
+    # Initialize the Groq models
+    reasoning_llm = ChatGroq(
         model=REASONING_MODEL,
+        temperature=0.0,
+        max_tokens=MAX_OUTPUT_TOKENS,
+        api_key=api_key
+    )
+    fast_llm = ChatGroq(
+        model=FAST_MODEL,
         temperature=0.0,
         max_tokens=MAX_OUTPUT_TOKENS,
         api_key=api_key
     )
     
     # Set up structured output with include_raw=True to capture token usage metadata
-    structured_llm = llm.with_structured_output(ArticleAnalysis, include_raw=True)
+    structured_reasoning = reasoning_llm.with_structured_output(ArticleAnalysis, include_raw=True)
+    structured_fast = fast_llm.with_structured_output(ArticleAnalysis, include_raw=True)
     
-    news_chain = news_prompt | structured_llm
-    arxiv_chain = arxiv_prompt | structured_llm
-    community_chain = community_prompt | structured_llm
+    news_chain = news_prompt | structured_fast
+    arxiv_chain = arxiv_prompt | structured_reasoning
+    community_chain = community_prompt | structured_fast
     
     # Reset processed count at the start of analysis to prevent double counting on retries
     state.metadata.total_articles_processed = 0

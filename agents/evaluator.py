@@ -54,6 +54,16 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
             state.metadata.total_articles_rejected += 1
             continue
             
+        if len(why_it_matters.strip()) < 30:
+            logger.warning(f"Evaluation Warning: Article '{title}' has a too short why_it_matters analysis. Removing.")
+            state.metadata.total_articles_rejected += 1
+            continue
+            
+        if not article.details or len(article.details) < 2:
+            logger.warning(f"Evaluation Warning: Article '{title}' lacks sufficient concrete details (less than 2 bullets). Removing.")
+            state.metadata.total_articles_rejected += 1
+            continue
+            
         # 5. Reject low trend score
         if trend_score < MIN_TREND_SCORE:
             logger.warning(f"Evaluation Warning: Article '{title}' has a low trend score ({trend_score}). Removing.")

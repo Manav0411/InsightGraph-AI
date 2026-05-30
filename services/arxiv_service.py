@@ -1,6 +1,7 @@
 import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
+import time
 from typing import List, Dict, Any
 from utils.logger import get_logger
 
@@ -27,12 +28,30 @@ def fetch_arxiv_papers(topics: List[str] = None, max_results: int = 10) -> List[
     encoded_query = urllib.parse.quote(search_query)
     url = f'http://export.arxiv.org/api/query?search_query={encoded_query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}'
     
-    try:
-        logger.info(f"Fetching ArXiv papers with query: {search_query}")
-        req = urllib.request.Request(url, headers={'User-Agent': 'InsightGraph/1.0'})
-        with urllib.request.urlopen(req, timeout=20) as response:
-            xml_data = response.read()
+    xml_data = None
+    for attempt in range(3):
+        try:
+            logger.info(f"Fetching ArXiv papers with query: {search_query} (Attempt {attempt + 1})")
+            req = urllib.request.Request(url, headers={'User-Agent': 'InsightGraph/1.0'})
+            with urllib.request.urlopen(req, timeout=20) as response:
+                xml_data = response.read()
+            break
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                sleep_time = 2 ** attempt
+                logger.warning(f"ArXiv rate limit hit (429). Retrying in {sleep_time} seconds...")
+                time.sleep(sleep_time)
+            else:
+                logger.error(f"HTTP error fetching from ArXiv: {e}")
+                break
+        except Exception as e:
+            logger.error(f"Error fetching from ArXiv: {e}")
+            break
             
+    if not xml_data:
+        return all_results
+        
+    try:
         root = ET.fromstring(xml_data)
         namespace = {'atom': 'http://www.w3.org/2005/Atom'}
         
