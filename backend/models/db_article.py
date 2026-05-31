@@ -3,6 +3,7 @@ from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Integer, Boo
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from pgvector.sqlalchemy import Vector
 from backend.db.base import Base
 
 class Article(Base):
@@ -26,6 +27,7 @@ class Article(Base):
     tags = Column(JSONB, default=list)
     recommendation_reason = Column(Text, nullable=True)
     is_grounded = Column(Boolean, default=True)
+    embedding = Column(Vector(384), nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
 

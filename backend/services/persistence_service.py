@@ -7,7 +7,7 @@ from backend.models.db_briefing import Briefing
 from backend.models.db_article import Article
 from backend.schemas.requests import UserPreferencesUpdate
 from backend.schemas.responses import NewsletterResponse
-from models.user import UserProfile, UserPreferences as PydanticUserPreferences
+from models.user import UserProfile, UserPreferences as PydanticUserPreferences, DEFAULT_PREFERRED_TOPICS, DEFAULT_EXCLUDED_TOPICS
 from utils.logger import get_logger
 
 logger = get_logger("persistence")
@@ -37,9 +37,9 @@ def get_user_profile_pydantic(db: Session, user_id: str) -> UserProfile:
     return UserProfile(
         user_id=user_id,
         preferences=PydanticUserPreferences(
-            preferred_topics=db_prefs.preferred_topics or [],
+            preferred_topics=db_prefs.preferred_topics if db_prefs.preferred_topics else DEFAULT_PREFERRED_TOPICS.copy(),
             preferred_sources=db_prefs.trusted_sources or [],
-            excluded_topics=db_prefs.excluded_topics or []
+            excluded_topics=db_prefs.excluded_topics if db_prefs.excluded_topics else DEFAULT_EXCLUDED_TOPICS.copy()
         )
     )
 

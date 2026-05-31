@@ -47,6 +47,21 @@ async def health():
 @app.on_event("startup")
 async def startup_event():
     logger.info("Initializing application and verifying DB connectivity...")
+    
+    # Recover tasks
+    from backend.services.task_manager import load_tasks, active_tasks, save_tasks
+    load_tasks()
+    recovered_count = 0
+    for task_id, state in active_tasks.items():
+        if state.get("status") == "running":
+            state["status"] = "failed"
+            state["stage"] = "Error"
+            state["error"] = "Server restarted during generation"
+            recovered_count += 1
+    if recovered_count > 0:
+        save_tasks()
+        logger.info(f"Recovered and marked {recovered_count} in-flight tasks as failed.")
+        
     try:
         # A lightweight connection test
         with engine.connect() as connection:

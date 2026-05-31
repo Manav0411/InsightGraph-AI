@@ -11,8 +11,9 @@ class UserPreferences(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
     
-    preferred_topics = Column(JSONB, default=list)
-    excluded_topics = Column(JSONB, default=list)
+    from models.user import DEFAULT_PREFERRED_TOPICS, DEFAULT_EXCLUDED_TOPICS
+    preferred_topics = Column(JSONB, default=lambda: DEFAULT_PREFERRED_TOPICS.copy())
+    excluded_topics = Column(JSONB, default=lambda: DEFAULT_EXCLUDED_TOPICS.copy())
     trusted_sources = Column(JSONB, default=list)
     behavioral_tuning = Column(JSONB, default=dict)
     

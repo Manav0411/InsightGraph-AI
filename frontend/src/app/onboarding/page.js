@@ -6,10 +6,21 @@ import { useUser } from '../../context/UserContext';
 import { API_BASE_URL } from '../../lib/config';
 
 const TOPICS = [
-  'AI Agents', 'LLM Infrastructure', 'Open Source AI',
-  'AI Research & Papers', 'AI Safety & Alignment', 'AI Coding Assistants',
-  'Enterprise AI', 'AI Startups & Funding', 'Robotics & Embodied AI',
-  'Multimodal AI', 'Synthetic Media'
+  'AI Agents & Agentic Workflows',
+  'Large Language Models (LLMs)',
+  'Foundation Model Releases',
+  'LLM Infrastructure & Serving',
+  'Open Source AI',
+  'RAG & Vector Databases',
+  'AI Alignment & Safety',
+  'LLMOps & MLOps',
+  'Multimodal AI',
+  'AI Regulation & Policy',
+  'AI Hardware & Chips',
+  'AI Coding Assistants',
+  'Prompt Engineering & Evals',
+  'AI Startups & Funding',
+  'AI Reasoning & Planning'
 ];
 
 export default function Onboarding() {

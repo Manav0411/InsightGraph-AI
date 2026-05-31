@@ -21,12 +21,27 @@ def rank_articles(state: PipelineState) -> PipelineState:
         state.metadata.generated_for_user = user_profile.user_id
         logger.info(f"Applying personalization boosts for user: {user_profile.user_id}")
     
+    filtered_articles = []
+    
     for article in state.articles:
         score = 0.0
         source = article.source
         title = article.title.lower()
         content = article.content.lower()
         
+        # Check Exclusions First (Hard Drop)
+        should_drop = False
+        if user_profile:
+            prefs = user_profile.preferences
+            for excl_topic in prefs.excluded_topics:
+                excl_topic_lower = excl_topic.lower()
+                if excl_topic_lower in title or excl_topic_lower in content:
+                    logger.info(f"Article '{article.title}' matched excluded topic '{excl_topic}'. Hard dropping.")
+                    should_drop = True
+                    break
+        if should_drop:
+            continue
+            
         # Generic metric heuristic: reward highly upvoted/starred posts (Logarithmic scale)
         # Applies to Hacker News, Reddit, or any source setting 'stars'
         metrics = article.stars or 0
@@ -61,21 +76,16 @@ def rank_articles(state: PipelineState) -> PipelineState:
                     boosts_applied_total += 1
                     article.recommendation_reasons.append(f"Matches preferred topic: {pref_topic} (+3.0)")
                     logger.info(f"Article '{article.title}' matched preferred topic '{pref_topic}': +3.0 boost")
-            
-            # Excluded topics match (case-insensitive)
-            for excl_topic in prefs.excluded_topics:
-                excl_topic_lower = excl_topic.lower()
-                if excl_topic_lower in title or excl_topic_lower in content:
-                    p_boost -= 5.0
-                    boosts_applied_total += 1
-                    article.recommendation_reasons.append(f"Matches excluded topic: {excl_topic} (-5.0)")
-                    logger.info(f"Article '{article.title}' matched excluded topic '{excl_topic}': -5.0 penalty")
 
         article.personalization_boost = round(p_boost, 1)
         score += p_boost
         
         # Cap score rounding
         article.trend_score = round(score, 1)
+        filtered_articles.append(article)
+        
+    # Replace original list with filtered list
+    state.articles = filtered_articles
         
     if user_profile:
         state.metadata.personalization_boosts_applied = boosts_applied_total

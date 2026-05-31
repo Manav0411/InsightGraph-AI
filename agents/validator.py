@@ -35,12 +35,26 @@ async def _validate_single_article(llm: ChatGroq, article: Article, sem: asyncio
         )
     
     async with sem:
-        try:
-            response = await llm.ainvoke(prompt)
-            return article, response.is_relevant
-        except Exception as e:
-            logger.warning(f"[Validator] Validation failed for '{article.title}', defaulting to True: {e}")
-            return article, True
+        import re
+        retries = 0
+        while retries < 3:
+            try:
+                response = await llm.ainvoke(prompt)
+                return article, response.is_relevant
+            except Exception as e:
+                err_msg = str(e)
+                if "429" in err_msg or "rate_limit" in err_msg:
+                    wait_match = re.search(r'Please try again in (\d+\.?\d*)s', err_msg)
+                    wait_time = float(wait_match.group(1)) + 1.0 if wait_match else (2 ** retries)
+                    logger.warning(f"[Validator] Rate limit hit for '{article.title}'. Waiting {wait_time}s...")
+                    await asyncio.sleep(wait_time)
+                    retries += 1
+                else:
+                    logger.warning(f"[Validator] Validation failed for '{article.title}', defaulting to True: {e}")
+                    return article, True
+                    
+        logger.warning(f"[Validator] Rate limit retries exhausted for '{article.title}', defaulting to True.")
+        return article, True
 
 async def validate_articles(state: PipelineState) -> PipelineState:
     """
