@@ -9,6 +9,7 @@ export default function Analytics() {
   const { user, getToken } = useUser();
   const [trendsData, setTrendsData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState('all');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -27,10 +28,16 @@ export default function Analytics() {
           };
           
           if (json.latency_trends) {
-            json.latency_trends.forEach(item => item.date = formatChartDate(item.date));
+            json.latency_trends.forEach(item => {
+              item.iso_date = item.date;
+              item.date = formatChartDate(item.date);
+            });
           }
           if (json.token_trends) {
-            json.token_trends.forEach(item => item.date = formatChartDate(item.date));
+            json.token_trends.forEach(item => {
+              item.iso_date = item.date;
+              item.date = formatChartDate(item.date);
+            });
           }
           
           setTrendsData(json);
@@ -58,15 +65,52 @@ export default function Analytics() {
 
   const { token_trends, latency_trends, fastest_growing_topics, source_distribution } = trendsData;
 
+  const filterByDate = (arr) => {
+    if (!arr || dateFilter === 'all') return arr;
+    const now = new Date();
+    const days = dateFilter === '7d' ? 7 : 30;
+    const cutoff = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+    return arr.filter(item => new Date(item.iso_date) >= cutoff);
+  };
+
+  const filteredLatency = filterByDate(latency_trends);
+  const filteredTokens = filterByDate(token_trends);
+
   const topTopic = fastest_growing_topics?.[0]?.topic || "AI Agents";
   const topSource = source_distribution?.[0]?.source || "Tavily";
-  const avgSqi = (latency_trends.reduce((sum, item) => sum + (item.sqi || 0), 0) / latency_trends.length).toFixed(1);
+  const avgSqi = filteredLatency.length > 0 
+    ? (filteredLatency.reduce((sum, item) => sum + (item.sqi || 0), 0) / filteredLatency.length).toFixed(1)
+    : "N/A";
 
   return (
-    <div className="flex flex-col gap-16 pb-20">
-      <header className="max-w-4xl">
-        <h1 className="font-headline text-5xl md:text-6xl font-bold text-on-surface mb-4 tracking-tight leading-tight">Ecosystem Intelligence</h1>
-        <p className="text-on-surface-variant text-xl leading-relaxed">Longitudinal platform memory and signal evolution across historical briefings.</p>
+    <div className="flex flex-col gap-16 pb-20 max-w-5xl mx-auto w-full">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 w-full">
+        <div className="max-w-3xl">
+          <h1 className="font-headline text-5xl md:text-6xl font-bold text-on-surface mb-4 tracking-tight leading-tight">Ecosystem Intelligence</h1>
+          <p className="text-on-surface-variant text-xl leading-relaxed">Longitudinal platform memory and signal evolution across historical briefings.</p>
+        </div>
+        
+        {/* Date Range Filter */}
+        <div className="flex bg-surface-container-high rounded-lg p-1 shadow-inner shrink-0">
+          <button 
+            onClick={() => setDateFilter('7d')}
+            className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${dateFilter === '7d' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50'}`}
+          >
+            7 Days
+          </button>
+          <button 
+            onClick={() => setDateFilter('30d')}
+            className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${dateFilter === '30d' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50'}`}
+          >
+            30 Days
+          </button>
+          <button 
+            onClick={() => setDateFilter('all')}
+            className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${dateFilter === 'all' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50'}`}
+          >
+            All Time
+          </button>
+        </div>
       </header>
 
       {/* Section A: Platform Intelligence Trends */}
@@ -105,7 +149,7 @@ export default function Analytics() {
             <h3 className="font-headline text-2xl font-bold text-on-surface mb-8">Signal Quality Evolution</h3>
             <div style={{ width: '100%', height: 256 }}>
               <ResponsiveContainer width="99%" height={256}>
-                <AreaChart data={latency_trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={filteredLatency} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorSqi" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="rgb(var(--color-primary))" stopOpacity={0.2}/>
@@ -166,7 +210,7 @@ export default function Analytics() {
             <h3 className="font-headline text-lg font-bold text-on-surface-variant mb-6">Token Usage Trends</h3>
             <div style={{ width: '100%', height: 192 }}>
               <ResponsiveContainer width="99%" height={192}>
-                <AreaChart data={token_trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={filteredTokens} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                    <defs>
                     <linearGradient id="colorPrompt" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="rgb(var(--color-secondary))" stopOpacity={0.2}/>
@@ -188,7 +232,7 @@ export default function Analytics() {
             <h3 className="font-headline text-lg font-bold text-on-surface-variant mb-6">Execution Latency (Seconds)</h3>
             <div style={{ width: '100%', height: 192 }}>
               <ResponsiveContainer width="99%" height={192}>
-                <LineChart data={latency_trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <LineChart data={filteredLatency} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgb(var(--color-outline-variant))" opacity={0.2} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'rgb(var(--color-on-surface-variant))', fontSize: 10}} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: 'rgb(var(--color-on-surface-variant))', fontSize: 10}} />

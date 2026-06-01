@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../lib/config';
 import { useUser } from '../context/UserContext';
 
 export default function IntelligenceReader() {
   const { user, getToken } = useUser();
+  const router = useRouter();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState(null);
@@ -30,14 +32,29 @@ export default function IntelligenceReader() {
     if (user?.id) fetchLatest();
   }, [user?.id, getToken]);
 
-  // Lock body scroll when modal is open
+  // Redirect to mission control if no briefing exists
   useEffect(() => {
+    if (!loading && user?.id && data && (!data.articles || data.articles.length === 0)) {
+      router.push('/mission-control');
+    }
+  }, [loading, user?.id, data, router]);
+
+  // Lock body scroll and handle escape key when modal is open
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") setSelectedArticle(null);
+    };
+
     if (selectedArticle) {
       document.body.style.overflow = 'hidden';
+      document.addEventListener("keydown", handleEsc);
     } else {
       document.body.style.overflow = 'unset';
     }
-    return () => { document.body.style.overflow = 'unset'; }
+    return () => { 
+      document.body.style.overflow = 'unset'; 
+      document.removeEventListener("keydown", handleEsc);
+    }
   }, [selectedArticle]);
 
   if (loading) {

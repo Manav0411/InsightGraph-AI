@@ -33,7 +33,7 @@ export default function Onboarding() {
     if (selectedTopics.includes(topic)) {
       setSelectedTopics(selectedTopics.filter(t => t !== topic));
     } else {
-      if (selectedTopics.length < 5) {
+      if (selectedTopics.length < 10) {
         setSelectedTopics([...selectedTopics, topic]);
       }
     }
@@ -67,7 +67,8 @@ export default function Onboarding() {
           <span className="material-symbols-outlined text-[48px] text-primary mb-4">radar</span>
           <h1 className="font-headline text-4xl font-bold text-on-surface mb-3 tracking-tight">Tune Your Radar</h1>
           <p className="text-on-surface-variant font-body text-lg">
-            Select up to 5 topics. InsightGraph will actively monitor the ecosystem for signals matching these parameters.
+            Select up to 10 topics. InsightGraph will actively monitor the ecosystem for signals matching these parameters.
+            <br/><span className="text-sm opacity-80 mt-1 inline-block">You can add more topics anytime in Preferences.</span>
           </p>
         </div>
 
