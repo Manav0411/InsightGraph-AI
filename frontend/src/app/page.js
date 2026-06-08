@@ -12,32 +12,89 @@ export default function IntelligenceReader() {
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState(null);
 
-  useEffect(() => {
-    const fetchLatest = async () => {
-      try {
-        const token = await getToken();
-        const headers = { 'Authorization': `Bearer ${token}` };
-        
-        const resLatest = await fetch(`${API_BASE_URL}/newsletter/latest`, { headers });
-        if (resLatest.ok) {
-          const json = await resLatest.json();
-          setData(json);
-        }
-      } catch (e) {
-        console.error("Failed to fetch data:", e);
-      } finally {
-        setLoading(false);
+  const [activeTask, setActiveTask] = useState(null);
+
+  const fetchLatest = async () => {
+    try {
+      const token = await getToken();
+      const headers = { 'Authorization': `Bearer ${token}` };
+      
+      const resLatest = await fetch(`${API_BASE_URL}/newsletter/latest`, { headers });
+      if (resLatest.ok) {
+        const json = await resLatest.json();
+        setData(json);
       }
-    };
+    } catch (e) {
+      console.error("Failed to fetch data:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (user?.id) fetchLatest();
+    
+    // Check for active background task
+    const taskId = localStorage.getItem('active_task_id');
+    if (taskId) {
+      setActiveTask(taskId);
+    }
   }, [user?.id, getToken]);
 
-  // Redirect to mission control if no briefing exists
+  // Poll task status if active
   useEffect(() => {
-    if (!loading && user?.id && data && (!data.articles || data.articles.length === 0)) {
-      router.push('/mission-control');
+    if (!activeTask) return;
+    
+    let isSubscribed = true;
+    const pollTask = async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_BASE_URL}/newsletter/status/${activeTask}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok && isSubscribed) {
+          const statusData = await res.json();
+          if (statusData.status === 'completed') {
+            localStorage.removeItem('active_task_id');
+            setActiveTask(null);
+            fetchLatest(); // Refresh data
+          } else if (statusData.status === 'failed') {
+            localStorage.removeItem('active_task_id');
+            setActiveTask(null);
+          }
+        }
+      } catch (e) {
+        console.error("Polling error:", e);
+      }
+    };
+    
+    const intervalId = setInterval(pollTask, 3000);
+    return () => {
+      isSubscribed = false;
+      clearInterval(intervalId);
+    };
+  }, [activeTask, getToken]);
+
+  const handleRefresh = async () => {
+    try {
+      const token = await getToken();
+      const genRes = await fetch(`${API_BASE_URL}/newsletter/generate-async`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ user_id: user.id })
+      });
+      if (genRes.ok) {
+        const { task_id } = await genRes.json();
+        localStorage.setItem('active_task_id', task_id);
+        setActiveTask(task_id);
+      }
+    } catch (err) {
+      console.error("Failed to refresh feed:", err);
     }
-  }, [loading, user?.id, data, router]);
+  };
 
   // Lock body scroll and handle escape key when modal is open
   useEffect(() => {
@@ -57,12 +114,14 @@ export default function IntelligenceReader() {
     }
   }, [selectedArticle]);
 
-  if (loading) {
+  if (loading || activeTask) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-outline-variant/30 border-t-primary rounded-full animate-spin"></div>
-          <p className="font-headline text-on-surface-variant tracking-wide">Loading Intelligence Briefing...</p>
+          <p className="font-headline text-on-surface-variant tracking-wide">
+            {activeTask ? "Synthesizing your radar... this may take 5-10 minutes depending on ecosystem volume." : "Loading Intelligence Briefing..."}
+          </p>
         </div>
       </div>
     );
@@ -77,7 +136,16 @@ export default function IntelligenceReader() {
       <div className="w-full max-w-[1200px] mx-auto px-5 md:px-8 flex flex-col gap-16 relative pb-24">
         
         {/* Header */}
-        <header className="flex flex-col items-center text-center border-b border-outline-variant/30 pb-10 pt-4">
+        <header className="flex flex-col items-center text-center border-b border-outline-variant/30 pb-10 pt-4 relative">
+          <div className="absolute top-0 right-0">
+            <button 
+              onClick={handleRefresh}
+              className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-variant/30 group"
+              title="Refresh Feed"
+            >
+              <span className="material-symbols-outlined text-[20px] group-hover:rotate-180 transition-transform duration-500">refresh</span>
+            </button>
+          </div>
           <div className="px-4 py-1.5 bg-surface-variant/40 rounded-lg text-[11px] font-bold text-primary uppercase tracking-widest mb-6">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </div>
@@ -91,11 +159,8 @@ export default function IntelligenceReader() {
 
         {articles.length === 0 ? (
           <div className="text-center py-24 text-on-surface-variant">
-            <span className="material-symbols-outlined text-5xl text-outline-variant mb-4 opacity-50">article</span>
-            <p className="font-medium text-lg">No intelligence briefing available.</p>
-            <a href="/mission-control" className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-md hover:bg-primary/90 transition-colors">
-              <span className="material-symbols-outlined text-[20px]">bolt</span> Go to Mission Control to Synthesize
-            </a>
+            <span className="material-symbols-outlined text-5xl text-outline-variant mb-4 opacity-50">radar</span>
+            <p className="font-medium text-lg">Your radar is tuning. Your first briefing will be delivered at 6:00 AM.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-16">

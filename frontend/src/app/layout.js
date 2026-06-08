@@ -5,7 +5,7 @@ import { ThemeProvider } from "../components/ThemeProvider";
 import { ThemeToggle } from "../components/ThemeToggle";
 import Link from 'next/link';
 import { SignInButton, UserButton } from '@clerk/nextjs';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { ClerkThemeProvider } from '../components/ClerkThemeProvider';
 import { Agentation } from "agentation";
 
@@ -16,6 +16,10 @@ export const metadata = {
 
 export default async function RootLayout({ children }) {
   const { userId } = await auth();
+  const user = await currentUser();
+  const email = user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() || "";
+  const adminEmails = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : [];
+  const isAdmin = user && (adminEmails.length === 0 || adminEmails.includes(email));
   
   return (
     <html lang="en" suppressHydrationWarning>
@@ -30,7 +34,7 @@ export default async function RootLayout({ children }) {
             <div className="flex justify-between items-center px-8 h-16 w-full max-w-7xl mx-auto">
               <div className="flex items-center gap-8">
                 <div className="font-headline text-2xl font-bold text-primary">InsightGraph</div>
-                <NavLinks />
+                <NavLinks isAdmin={isAdmin} />
               </div>
               <div className="flex items-center gap-4">
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../../lib/config';
-import { useUser } from '../../context/UserContext';
+import { API_BASE_URL } from '../../../lib/config';
+import { useUser } from '../../../context/UserContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 export default function Analytics() {

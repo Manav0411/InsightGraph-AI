@@ -37,7 +37,7 @@ async def _validate_single_article(llm: ChatGroq, article: Article, sem: asyncio
     async with sem:
         import re
         retries = 0
-        while retries < 3:
+        while retries < 10:
             try:
                 response = await llm.ainvoke(prompt)
                 return article, response.is_relevant
@@ -45,7 +45,7 @@ async def _validate_single_article(llm: ChatGroq, article: Article, sem: asyncio
                 err_msg = str(e)
                 if "429" in err_msg or "rate_limit" in err_msg:
                     wait_match = re.search(r'Please try again in (\d+\.?\d*)s', err_msg)
-                    wait_time = float(wait_match.group(1)) + 1.0 if wait_match else (2 ** retries)
+                    wait_time = float(wait_match.group(1)) + 1.0 if wait_match else (5 + (2 ** retries))
                     logger.warning(f"[Validator] Rate limit hit for '{article.title}'. Waiting {wait_time}s...")
                     await asyncio.sleep(wait_time)
                     retries += 1

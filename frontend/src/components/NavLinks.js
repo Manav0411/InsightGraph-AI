@@ -3,15 +3,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export default function NavLinks() {
+export default function NavLinks({ isAdmin }) {
   const pathname = usePathname();
 
   const links = [
     { name: 'Intelligence Briefing', href: '/' },
-    { name: 'Mission Control', href: '/mission-control' },
-    { name: 'Analytics', href: '/analytics' },
     { name: 'History', href: '/history' },
   ];
+
+  if (isAdmin) {
+    links.push({ name: 'Mission Control', href: '/admin/mission-control' });
+    links.push({ name: 'Analytics', href: '/admin/analytics' });
+  }
 
   return (
     <div className="hidden md:flex gap-6 h-full items-center">

@@ -44,6 +44,7 @@ export default function Onboarding() {
     setIsSaving(true);
     try {
       const token = await getToken();
+      // 1. Save preferences
       await fetch(`${API_BASE_URL}/users/${user.id}`, {
         method: 'POST',
         headers: {
@@ -52,9 +53,24 @@ export default function Onboarding() {
         },
         body: JSON.stringify({ preferred_topics: selectedTopics })
       });
-      router.push('/mission-control');
+      
+      // 2. Trigger initial background generation
+      const genRes = await fetch(`${API_BASE_URL}/newsletter/generate-async`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ user_id: user.id })
+      });
+      if (genRes.ok) {
+        const { task_id } = await genRes.json();
+        localStorage.setItem('active_task_id', task_id);
+      }
+
+      router.push('/');
     } catch (err) {
-      console.error("Failed to save preferences:", err);
+      console.error("Failed to initialize radar:", err);
       setIsSaving(false);
     }
   };
@@ -103,11 +119,11 @@ export default function Onboarding() {
               }
             `}
           >
-            {isSaving ? "Calibrating..." : "Initialize Command Center"}
+            {isSaving ? "Calibrating..." : "Initialize Reader"}
           </button>
           
           <button 
-            onClick={() => router.push('/mission-control')}
+            onClick={() => router.push('/')}
             className="text-xs font-bold text-on-surface-variant hover:text-primary uppercase tracking-widest mt-2"
           >
             Skip for now

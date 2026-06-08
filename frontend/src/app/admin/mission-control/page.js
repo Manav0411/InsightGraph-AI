@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import PipelineProgress from '../../components/orchestration/PipelineProgress';
-import { API_BASE_URL } from '../../lib/config';
-import { useUser } from '../../context/UserContext';
+import PipelineProgress from '../../../components/orchestration/PipelineProgress';
+import { API_BASE_URL } from '../../../lib/config';
+import { useUser } from '../../../context/UserContext';
 
 export default function CommandCenter() {
   const { user, preferences, getToken } = useUser();
@@ -178,7 +178,6 @@ export default function CommandCenter() {
       {/* Top Synthesize Button Area */}
       <div className="w-full flex flex-col items-center pt-8">
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary via-tertiary to-primary rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
           <button 
             onClick={generateBriefing}
             disabled={isGenerating}
