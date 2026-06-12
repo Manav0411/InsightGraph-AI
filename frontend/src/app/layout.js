@@ -31,12 +31,12 @@ export default async function RootLayout({ children }) {
           <ClerkThemeProvider>
             <UserProvider>
               <nav className="font-body leading-relaxed fixed top-0 w-full z-50 bg-surface-container-low border-b border-outline-variant/20 shadow-sm transition-all duration-300 ease-in-out">
-            <div className="flex justify-between items-center px-8 h-16 w-full max-w-7xl mx-auto">
-              <div className="flex items-center gap-8">
-                <Link href="/" className="font-headline text-3xl font-bold text-primary hover:opacity-80 transition-opacity">InsightGraph</Link>
-                <NavLinks isAdmin={isAdmin} />
+            <div className="flex justify-between items-center px-4 md:px-8 h-16 w-full max-w-7xl mx-auto">
+              <div className="flex items-center gap-2 md:gap-8">
+                <Link href="/" className="font-headline text-xl md:text-3xl font-bold text-primary hover:opacity-80 transition-opacity truncate max-w-[200px] md:max-w-none">InsightGraph</Link>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
+                <NavLinks isAdmin={isAdmin} />
 
                 <ThemeToggle />
                 <Link href="/preferences" className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
