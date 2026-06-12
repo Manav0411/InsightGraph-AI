@@ -8,3 +8,4 @@ class UserPreferencesUpdate(BaseModel):
     preferred_topics: Optional[List[str]] = None
     preferred_sources: Optional[List[str]] = None
     excluded_topics: Optional[List[str]] = None
+    email_delivery_enabled: Optional[bool] = None

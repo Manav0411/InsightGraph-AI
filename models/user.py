@@ -40,6 +40,7 @@ class UserPreferences(BaseModel):
     preferred_topics: List[str] = Field(default_factory=lambda: DEFAULT_PREFERRED_TOPICS.copy())
     preferred_sources: List[str] = Field(default_factory=list)
     excluded_topics: List[str] = Field(default_factory=lambda: DEFAULT_EXCLUDED_TOPICS.copy())
+    email_delivery_enabled: bool = True
 
 
 class UserProfile(BaseModel):

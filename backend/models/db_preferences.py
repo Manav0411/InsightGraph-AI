@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -16,6 +16,7 @@ class UserPreferences(Base):
     excluded_topics = Column(JSONB, default=lambda: DEFAULT_EXCLUDED_TOPICS.copy())
     trusted_sources = Column(JSONB, default=list)
     behavioral_tuning = Column(JSONB, default=dict)
+    email_delivery_enabled = Column(Boolean, default=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

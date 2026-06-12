@@ -27,6 +27,7 @@ export default function Preferences() {
   const [topics, setTopics] = useState([]);
   const [exclusions, setExclusions] = useState([]);
   const [sources, setSources] = useState([]);
+  const [emailDelivery, setEmailDelivery] = useState(true);
   const [newTopic, setNewTopic] = useState('');
   const [newExclusion, setNewExclusion] = useState('');
   const [newSource, setNewSource] = useState('');
@@ -42,6 +43,9 @@ export default function Preferences() {
       setTopics(preferences.preferred_topics || []);
       setExclusions(preferences.excluded_topics || []);
       setSources(preferences.preferred_sources || []);
+      if (preferences.email_delivery_enabled !== undefined) {
+        setEmailDelivery(preferences.email_delivery_enabled);
+      }
     }
   }, [preferences]);
 
@@ -61,7 +65,8 @@ export default function Preferences() {
       await updatePreferences({
         preferred_topics: topics,
         excluded_topics: exclusions,
-        preferred_sources: sources
+        preferred_sources: sources,
+        email_delivery_enabled: emailDelivery
       });
     } catch (err) {
       console.error(err);
@@ -110,19 +115,6 @@ export default function Preferences() {
   return (
     <div className="w-full max-w-6xl space-y-8 mx-auto">
       {/* Page Header */}
-      <nav className="flex border-b border-outline-variant/20 mb-8 overflow-x-auto">
-        <a className="px-6 py-4 text-sm font-semibold text-on-surface-variant opacity-60 pointer-events-none whitespace-nowrap flex items-center gap-2" href="#">
-          Security <span className="text-[10px] bg-surface-variant text-on-surface-variant px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Soon</span>
-        </a>
-        <a className="px-6 py-4 text-sm font-semibold text-on-surface-variant opacity-60 pointer-events-none whitespace-nowrap flex items-center gap-2" href="#">
-          Data Sources <span className="text-[10px] bg-surface-variant text-on-surface-variant px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Soon</span>
-        </a>
-        <a className="px-6 py-4 text-sm font-semibold text-on-surface-variant opacity-60 pointer-events-none whitespace-nowrap flex items-center gap-2" href="#">
-          Integrations <span className="text-[10px] bg-surface-variant text-on-surface-variant px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Soon</span>
-        </a>
-        <a className="px-6 py-4 text-sm font-bold text-primary border-b-2 border-primary transition-colors whitespace-nowrap relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary" href="#">Preferences</a>
-      </nav>
-      
       <header className="mb-10">
         <h1 className="font-headline text-4xl font-bold text-on-surface mb-2">Personalization Preferences</h1>
         <p className="text-on-surface-variant text-lg leading-relaxed max-w-2xl">Tailor your InsightGraph experience by managing what matters most. Your configurations directly influence the intelligence briefings and analytics surfaced to you.</p>
@@ -279,55 +271,32 @@ export default function Preferences() {
           )}
         </div>
 
-        {/* Behavioral Tuning Card (Spans 2 columns) */}
+        {/* Delivery Preferences Card (Spans 2 columns) */}
         <div className="lg:col-span-2 bg-gradient-to-br from-surface-container-low to-transparent rounded-2xl p-8 border border-outline-variant/30 shadow-sm">
-          <div className="mb-8">
+          <div className="mb-6">
             <h3 className="font-headline text-xl font-semibold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-secondary">tune</span>
-              Behavioral Tuning
-              <span className="ml-2 text-[10px] font-bold bg-secondary/10 text-secondary border border-secondary/20 px-2 py-0.5 rounded uppercase tracking-wider">Coming Soon</span>
+              <span className="material-symbols-outlined text-secondary">mail</span>
+              Delivery Preferences
             </h3>
-            <p className="text-on-surface-variant text-sm mt-1">Adjust how the algorithm processes and presents information to you.</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 opacity-60 pointer-events-none">
-            {/* Toggle Setting */}
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h4 className="text-sm font-bold text-on-surface mb-1">Highlight Contradictions</h4>
-                <p className="text-xs text-on-surface-variant leading-relaxed">Automatically flag reports from trusted sources that present opposing viewpoints on your core topics.</p>
-              </div>
-              <label className="relative inline-flex items-center shrink-0 mt-1">
-                <input type="checkbox" defaultChecked disabled className="sr-only peer" />
-                <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline-variant/30 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h4 className="text-sm font-bold text-on-surface mb-1">Daily Email Briefing</h4>
+              <p className="text-xs text-on-surface-variant leading-relaxed max-w-md">Automatically send my synthesized intelligence digest to my registered email address every morning at 8:00 AM.</p>
             </div>
-
-            {/* Toggle Setting */}
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h4 className="text-sm font-bold text-on-surface mb-1">Aggressive Noise Filtering</h4>
-                <p className="text-xs text-on-surface-variant leading-relaxed">Strictly limit briefings to explicit matches of core topics, filtering out tangential or related industry news.</p>
-              </div>
-              <label className="relative inline-flex items-center shrink-0 mt-1">
-                <input type="checkbox" disabled className="sr-only peer" />
-                <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline-variant/30 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
-            </div>
-
-            {/* Toggle Setting */}
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h4 className="text-sm font-bold text-on-surface mb-1">Prioritize Primary Sources</h4>
-                <p className="text-xs text-on-surface-variant leading-relaxed">Boost raw data releases, earnings calls, and official statements over secondary journalistic analysis.</p>
-              </div>
-              <label className="relative inline-flex items-center shrink-0 mt-1">
-                <input type="checkbox" defaultChecked disabled className="sr-only peer" />
-                <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline-variant/30 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
-            </div>
+            <label className="relative inline-flex items-center shrink-0 mt-1 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={emailDelivery} 
+                onChange={(e) => setEmailDelivery(e.target.checked)} 
+                className="sr-only peer" 
+              />
+              <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline-variant/30 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
           </div>
         </div>
+
       </div>
 
       {/* Actions Footer */}

@@ -39,7 +39,8 @@ def get_user_profile_pydantic(db: Session, user_id: str) -> UserProfile:
         preferences=PydanticUserPreferences(
             preferred_topics=db_prefs.preferred_topics if db_prefs.preferred_topics else DEFAULT_PREFERRED_TOPICS.copy(),
             preferred_sources=db_prefs.trusted_sources or [],
-            excluded_topics=db_prefs.excluded_topics if db_prefs.excluded_topics else DEFAULT_EXCLUDED_TOPICS.copy()
+            excluded_topics=db_prefs.excluded_topics if db_prefs.excluded_topics else DEFAULT_EXCLUDED_TOPICS.copy(),
+            email_delivery_enabled=db_prefs.email_delivery_enabled if db_prefs.email_delivery_enabled is not None else True
         )
     )
 
@@ -54,6 +55,8 @@ def update_user_preferences(db: Session, user_id: str, request: UserPreferencesU
         db_prefs.trusted_sources = request.preferred_sources
     if request.excluded_topics is not None:
         db_prefs.excluded_topics = request.excluded_topics
+    if request.email_delivery_enabled is not None:
+        db_prefs.email_delivery_enabled = request.email_delivery_enabled
         
     db.commit()
     return get_user_profile_pydantic(db, user_id)

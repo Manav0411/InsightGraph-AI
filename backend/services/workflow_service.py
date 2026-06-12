@@ -141,7 +141,10 @@ async def generate_autonomous_briefing(user_id: str):
         try:
             user = db.query(User).filter(User.id == user_id).first()
             if user and db_briefing:
-                await send_briefing_email(db, user, db_briefing)
+                if user.preferences and getattr(user.preferences, 'email_delivery_enabled', True):
+                    await send_briefing_email(db, user, db_briefing)
+                else:
+                    logger.info(f"[scheduler] Email delivery disabled for user {user_id}. Skipping email.")
         except Exception as email_err:
             logger.error(f"[scheduler] Email delivery failed but orchestration succeeded for {user_id}: {email_err}")
 

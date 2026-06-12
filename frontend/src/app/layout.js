@@ -33,7 +33,7 @@ export default async function RootLayout({ children }) {
               <nav className="font-body leading-relaxed fixed top-0 w-full z-50 bg-surface-container-low border-b border-outline-variant/20 shadow-sm transition-all duration-300 ease-in-out">
             <div className="flex justify-between items-center px-8 h-16 w-full max-w-7xl mx-auto">
               <div className="flex items-center gap-8">
-                <div className="font-headline text-2xl font-bold text-primary">InsightGraph</div>
+                <Link href="/" className="font-headline text-3xl font-bold text-primary hover:opacity-80 transition-opacity">InsightGraph</Link>
                 <NavLinks isAdmin={isAdmin} />
               </div>
               <div className="flex items-center gap-4">
