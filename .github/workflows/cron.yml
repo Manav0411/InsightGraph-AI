@@ -1,0 +1,17 @@
+name: Daily InsightGraph Briefing
+
+on:
+  schedule:
+    # Runs at 08:00 UTC every day
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    # Allows you to trigger it manually from the GitHub Actions tab!
+
+jobs:
+  trigger-briefing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Backend
+        run: |
+          curl -X POST https://api.insightgraph.dev/scheduler/run-now \
+          -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
