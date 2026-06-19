@@ -16,3 +16,7 @@ resend==2.30.1
 svix
 pgvector
 sentence-transformers
+fastapi
+uvicorn[standard]
+PyJWT
+cryptography
