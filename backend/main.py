@@ -19,10 +19,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
+import os
+
 # Enable CORS for frontend integration
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+allow_origins = [frontend_url, "http://localhost:3000", "http://127.0.0.1:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -79,9 +84,8 @@ async def startup_event():
         Base.metadata.create_all(bind=engine)
         logger.info("SQLAlchemy metadata verified tables.")
         
-        # Start Autonomous Scheduler
-        from backend.services.scheduler_service import start_scheduler
-        start_scheduler(app)
+        # Note: Local APScheduler has been removed for production readiness.
+        # Intelligence generation is now triggered securely via external Cron Job hitting POST /scheduler/run-now
         
     except Exception as e:
         logger.error(f"PostgreSQL connectivity failed on startup: {e}")
