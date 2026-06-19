@@ -23,10 +23,13 @@ class VectorMemoryManager:
         if hf_token:
             headers["Authorization"] = f"Bearer {hf_token}"
             
-        response = requests.post(self.api_url, headers=headers, json={"inputs": [text]})
-        
-        if response.status_code != 200:
-            raise Exception(f"HF API Error: {response.status_code} - {response.text}")
+        try:
+            response = requests.post(self.api_url, headers=headers, json={"inputs": [text]}, timeout=2)
+            if response.status_code != 200:
+                raise Exception(f"HF API Error: {response.status_code} - {response.text}")
+        except requests.exceptions.RequestException as e:
+            # Gracefully handle Render's free tier blocking HuggingFace
+            raise Exception(f"Connection blocked or timed out (Render Free Tier limitation?): {str(e)}")
             
         data = response.json()
         if isinstance(data, list) and len(data) > 0:
