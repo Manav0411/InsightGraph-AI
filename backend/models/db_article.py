@@ -31,5 +31,4 @@ class Article(Base):
     
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # Relationships
     briefing = relationship("Briefing", back_populates="articles")

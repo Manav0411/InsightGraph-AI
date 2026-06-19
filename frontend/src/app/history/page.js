@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { API_BASE_URL } from '../../lib/config';
 import { useUser } from '../../context/UserContext';
 
-// --- Frontend Narrative Engine ---
 const formatBriefingDate = (dateString) => {
   const safeDateString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
   const date = new Date(safeDateString);
@@ -39,7 +38,6 @@ const generateNarrative = (briefing, prevBriefing) => {
   }
   return "Stable ecosystem intelligence gathered across trusted sources.";
 };
-// --------------------------------
 
 export default function HistoryPage() {
   const { user, getToken } = useUser();
@@ -105,7 +103,6 @@ export default function HistoryPage() {
         <div className="p-12 text-center text-on-surface-variant">No briefings matched your search.</div>
       ) : (
         <div className="relative border-l-2 border-transparent pl-8 ml-4 flex flex-col gap-12">
-          {/* Add a gradient line overlay behind the transparent border */}
           <div className="absolute left-[-2px] top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/50 via-outline-variant/30 to-transparent"></div>
           
           {filteredHistory.map((briefing, index) => {
@@ -116,10 +113,8 @@ export default function HistoryPage() {
             
             return (
               <div key={briefing.id} className="relative group/timeline">
-                {/* Timeline Dot with Glow */}
                 <div className="absolute -left-[41px] top-6 w-5 h-5 rounded-full bg-surface border-4 border-primary shadow-[0_0_15px_rgba(74,124,89,0)] group-hover/timeline:shadow-[0_0_15px_rgba(74,124,89,0.4)] transition-all duration-500 z-10"></div>
                 
-                {/* Narrative Element */}
                 <div className="mb-4 flex items-center gap-4">
                   <span className="text-primary font-bold text-lg tracking-wide">{dateStr}</span>
                 </div>
@@ -138,7 +133,6 @@ export default function HistoryPage() {
                         
                         <p className="text-on-surface-variant text-sm italic mb-4">{narrative}</p>
                         
-                        {/* Top Signal moved here */}
                         {briefing.top_signal && (
                           <div className="mb-4">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1 block">Top Signal</span>
@@ -175,7 +169,6 @@ export default function HistoryPage() {
                       </div>
                     </div>
                     
-                    {/* Hover Expansion Layer */}
                     <div className="overflow-hidden max-h-0 opacity-0 group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-2 transition-all duration-500 ease-in-out border-t border-outline-variant/10 pt-0 group-hover:pt-4 flex flex-wrap gap-6 text-sm">
                       <div className="flex flex-col">
                         <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Personalization Strength</span>

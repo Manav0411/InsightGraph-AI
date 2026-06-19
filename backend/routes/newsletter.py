@@ -21,14 +21,11 @@ logger = logging.getLogger("api_routes")
 async def background_generation_task(request: NewsletterRequest, user_id: str, task_id: str):
     """Executes the newsletter workflow in the background and saves to DB."""
     try:
-        # 1. Fetch user profile (Short-lived DB session)
         with SessionLocal() as db:
             user_profile = get_user_profile_pydantic(db, user_id)
             
-        # 2. Run the graph without holding a DB connection!
         response = await run_newsletter_workflow(request, user_profile, task_id=task_id)
         
-        # 3. Save briefing (New short-lived DB session)
         with SessionLocal() as db:
             save_briefing(db, user_id, response)
             
@@ -64,14 +61,11 @@ async def generate_newsletter(request: NewsletterRequest, db: Session = Depends(
     This is a long-running synchronous task.
     """
     try:
-        # Override the request user_id with the securely verified token user_id
         request.user_id = user_id
         
         user_profile = get_user_profile_pydantic(db, user_id)
         
-        # Run workflow
         response = await run_newsletter_workflow(request, user_profile)
-        # Persist to PostgreSQL alongside JSON cache
         save_briefing(db, user_id, response)
         return response
     except Exception as e:
@@ -121,7 +115,6 @@ async def get_historical_briefing(briefing_id: str, db: Session = Depends(get_db
     if not briefing:
         raise HTTPException(status_code=404, detail="Briefing not found")
     
-    # Optional: Verify that this briefing belongs to user_id
     if briefing.user_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to view this briefing")
         
@@ -195,7 +188,6 @@ async def generate_newsletter_stream(request: NewsletterRequest, db: Session = D
     Simulates a live workflow execution panel by streaming progress updates via SSE,
     followed by the actual generation.
     """
-    # Secure override
     request.user_id = user_id
     
     async def event_generator():
@@ -215,10 +207,8 @@ async def generate_newsletter_stream(request: NewsletterRequest, db: Session = D
         yield f"data: {{\"stage\": \"Finalizing\", \"status\": \"started\"}}\n\n"
         
         try:
-            # Run the actual workflow at the end to generate the final artifact
             response = await run_newsletter_workflow(request, db)
             
-            # Persist to PostgreSQL alongside JSON cache
             save_briefing(db, user_id, response)
             
             yield f"data: {{\"stage\": \"Done\", \"status\": \"completed\", \"result\": \"success\"}}\n\n"

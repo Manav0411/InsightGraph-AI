@@ -44,7 +44,6 @@ export default function Onboarding() {
     setIsSaving(true);
     try {
       const token = await getToken();
-      // 1. Save preferences
       await fetch(`${API_BASE_URL}/users/${user.id}`, {
         method: 'POST',
         headers: {
@@ -54,7 +53,6 @@ export default function Onboarding() {
         body: JSON.stringify({ preferred_topics: selectedTopics })
       });
       
-      // 2. Trigger initial background generation
       const genRes = await fetch(`${API_BASE_URL}/newsletter/generate-async`, {
         method: 'POST',
         headers: {

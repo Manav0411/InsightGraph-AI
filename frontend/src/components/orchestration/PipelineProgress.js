@@ -35,13 +35,10 @@ export default function PipelineProgress({ active, progressData }) {
         }
       `}} />
 
-      {/* Modal Container */}
       <div className="dark-modal w-full max-w-[500px] rounded-2xl overflow-hidden flex flex-col relative border border-outline-variant/20 transition-all duration-500">
         
-        {/* Shimmer Effect across top */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50 shimmer"></div>
         
-        {/* Header */}
         <div className="p-6 pb-4 flex justify-between items-start border-b border-white/10">
           <div>
             <h2 className="font-headline text-xl font-bold tracking-wide text-white mb-1">
@@ -53,7 +50,6 @@ export default function PipelineProgress({ active, progressData }) {
           </div>
         </div>
         
-        {/* Content Area */}
         <div className="p-6 flex flex-col gap-8 relative min-h-[350px] justify-center">
           
           {isComplete ? (
@@ -79,7 +75,6 @@ export default function PipelineProgress({ active, progressData }) {
             </div>
           ) : (
             <>
-              {/* Central Progress Ring */}
               <div className="flex justify-center relative py-4">
                 <div className="relative w-32 h-32 flex items-center justify-center">
                   <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -94,7 +89,6 @@ export default function PipelineProgress({ active, progressData }) {
                 </div>
               </div>
               
-              {/* Vertical Stepper */}
               <div className="flex flex-col gap-4 relative">
                 <div className="absolute left-3.5 top-4 bottom-4 w-px bg-white/10 z-0"></div>
                 
@@ -129,7 +123,6 @@ export default function PipelineProgress({ active, progressData }) {
                 </div>
               </div>
               
-              {/* Terminal / Log Output */}
               <div className="bg-black/40 rounded-xl p-4 border border-white/5 shadow-inner overflow-hidden relative group mt-4">
                 <div className="absolute top-0 right-4 px-2 py-1 bg-[#1e2220] rounded-b-md border-x border-b border-white/5 font-mono text-[10px] text-white/30 tracking-widest uppercase">System Log</div>
                 <div className="font-mono text-xs leading-relaxed text-white/70 flex flex-col gap-1 mt-2">
@@ -145,7 +138,6 @@ export default function PipelineProgress({ active, progressData }) {
           
         </div>
         
-        {/* Footer */}
         {!isComplete && (
           <div className="bg-black/20 p-4 border-t border-white/5 flex justify-between items-center rounded-b-2xl">
             <div className="flex items-center gap-2 text-white/50 font-mono text-xs">

@@ -12,6 +12,5 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationships
     preferences = relationship("UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
     briefings = relationship("Briefing", back_populates="user", cascade="all, delete-orphan")

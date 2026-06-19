@@ -6,8 +6,6 @@ from datetime import datetime
 
 TASKS_FILE = os.path.join(os.path.dirname(__file__), "..", ".tasks.json")
 
-# Global in-memory dictionary to store active tasks
-# Format: { "task_id": { "status": "running", "stage": "...", "progress": 0, "result": None, "error": None, "created_at": datetime } }
 active_tasks: Dict[str, Dict[str, Any]] = {}
 
 def load_tasks():

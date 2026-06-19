@@ -15,31 +15,26 @@ class Briefing(Base):
     generated_at = Column(DateTime, default=datetime.utcnow)
     execution_time_seconds = Column(Float, default=0.0)
     
-    # Trust / Health metrics
     workflow_health = Column(String, nullable=True) # e.g. 'success', 'recovery_triggered'
     grounding_reliability = Column(Float, default=100.0)
     validation_success_rate = Column(Float, default=100.0)
     
-    # Token Tracking
     prompt_tokens = Column(Integer, default=0)
     completion_tokens = Column(Integer, default=0)
     
     avg_trend_score = Column(Float, default=0.0)
     total_articles = Column(Integer, default=0)
     
-    # Historical Intelligence Denormalized Metadata
     dominant_topics = Column(JSONB, default=list)
     top_signal = Column(JSONB, nullable=True)
     top_sources = Column(JSONB, default=list)
     signal_quality_index = Column(Float, default=0.0)
     
-    # Personalization Metadata
     matched_topics = Column(JSONB, default=list)
     matched_sources = Column(JSONB, default=list)
     personalization_strength = Column(Float, default=0.0)
     
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # Relationships
     user = relationship("User", back_populates="briefings")
     articles = relationship("Article", back_populates="briefing", cascade="all, delete-orphan")

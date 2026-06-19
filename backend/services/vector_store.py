@@ -8,30 +8,33 @@ from backend.models.db_article import Article
 from backend.models.db_briefing import Briefing
 from utils.logger import get_logger
 
-# Import SentenceTransformer directly
-from sentence_transformers import SentenceTransformer
+import requests
 
 logger = get_logger("vector_store")
 
 class VectorMemoryManager:
-    """
-    Manages longitudinal memory using pgvector and SentenceTransformer.
-    """
     def __init__(self):
-        # Use a lightweight local embedding model. 
-        # This will download the model weights (~90MB) on the very first run.
-        try:
-            self.model = SentenceTransformer("all-MiniLM-L6-v2")
-            logger.info("[VectorStore] Initialized SentenceTransformer model.")
-        except Exception as e:
-            logger.error(f"[VectorStore] Failed to initialize SentenceTransformer: {e}")
-            raise
+        self.api_url = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+        logger.info("[VectorStore] Initialized VectorMemoryManager to use Hugging Face Inference API.")
+
+    def _get_embedding(self, text: str) -> List[float]:
+        headers = {}
+        hf_token = os.getenv("HF_TOKEN")
+        if hf_token:
+            headers["Authorization"] = f"Bearer {hf_token}"
+            
+        response = requests.post(self.api_url, headers=headers, json={"inputs": [text]})
+        
+        if response.status_code != 200:
+            raise Exception(f"HF API Error: {response.status_code} - {response.text}")
+            
+        data = response.json()
+        if isinstance(data, list) and len(data) > 0:
+            return data[0]
+        else:
+            raise Exception(f"Unexpected HF API response format")
 
     def store_briefing(self, briefing: Briefing) -> int:
-        """
-        Embeds and stores all articles from a finalized briefing into the PostgreSQL vector store.
-        Returns the number of articles successfully stored.
-        """
         if not briefing.articles:
             return 0
             
@@ -40,13 +43,8 @@ class VectorMemoryManager:
         with SessionLocal() as db:
             for article in briefing.articles:
                 try:
-                    # We construct a composite text block for maximum semantic capture
                     composite_text = f"Title: {article.title}\nSource: {article.source}\nSummary: {article.summary}\nWhy It Matters: {article.why_it_matters}"
-                    
-                    # Compute embedding
-                    embedding = self.model.encode(composite_text).tolist()
-                    
-                    # Update the article in the database
+                    embedding = self._get_embedding(composite_text)
                     db.query(Article).filter(Article.id == article.id).update({"embedding": embedding})
                     success_count += 1
                 except Exception as e:
@@ -63,15 +61,10 @@ class VectorMemoryManager:
         return success_count
 
     def get_historical_context(self, query_text: str, user_id: str, limit: int = 2) -> List[Dict[str, Any]]:
-        """
-        Searches the PostgreSQL vector store for past articles semantically similar to the query.
-        Limits results to articles owned by the specified user.
-        """
         try:
-            query_embedding = self.model.encode(query_text).tolist()
+            query_embedding = self._get_embedding(query_text)
             
             with SessionLocal() as db:
-                # Fetch articles belonging to user's briefings, order by L2 distance
                 results = db.query(Article, Article.embedding.l2_distance(query_embedding).label('distance')) \
                     .join(Briefing) \
                     .filter(Briefing.user_id == user_id) \
@@ -100,5 +93,4 @@ class VectorMemoryManager:
             logger.error(f"[VectorStore] Query failed for text '{query_text[:30]}...': {str(e)}")
             return []
 
-# Singleton instance for easy import across the app
 memory_manager = VectorMemoryManager()

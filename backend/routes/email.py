@@ -19,7 +19,6 @@ async def preview_email(briefing_id: str, db: Session = Depends(get_db)):
         
     user = db.query(User).filter(User.id == briefing.user_id).first()
     if not user:
-        # Create a dummy user for rendering if somehow missing
         user = User(id="dummy", email="preview@example.com")
         
     html_content = generate_editorial_html(user, briefing)

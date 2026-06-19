@@ -34,14 +34,12 @@ export default function IntelligenceReader() {
   useEffect(() => {
     if (user?.id) fetchLatest();
     
-    // Check for active background task
     const taskId = localStorage.getItem('active_task_id');
     if (taskId) {
       setActiveTask(taskId);
     }
   }, [user?.id, getToken]);
 
-  // Poll task status if active
   useEffect(() => {
     if (!activeTask) return;
     
@@ -96,7 +94,6 @@ export default function IntelligenceReader() {
     }
   };
 
-  // Lock body scroll and handle escape key when modal is open
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape") setSelectedArticle(null);
@@ -135,7 +132,6 @@ export default function IntelligenceReader() {
     <>
       <div className="w-full max-w-[1200px] mx-auto px-5 md:px-8 flex flex-col gap-16 relative pb-24">
         
-        {/* Header */}
         <header className="flex flex-col items-center text-center border-b border-outline-variant/30 pb-10 pt-4 relative">
           <div className="absolute top-0 right-0">
             <button 
@@ -164,13 +160,11 @@ export default function IntelligenceReader() {
           </div>
         ) : (
           <div className="flex flex-col gap-16">
-            {/* Featured Post (Top 1) */}
             {featuredArticle && (
               <article 
                 onClick={() => setSelectedArticle(featuredArticle)}
                 className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 cursor-pointer group items-center"
               >
-                {/* Featured Image */}
                 <div className="relative aspect-[16/10] overflow-hidden rounded-2xl md:rounded-[2rem] w-full bg-surface-variant/30">
                   {featuredArticle.image_url ? (
                     <img 
@@ -181,13 +175,11 @@ export default function IntelligenceReader() {
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center opacity-30 text-2xl font-headline">No Image</div>
                   )}
-                  {/* Hover Brackets & Overlay */}
                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none flex items-center justify-center">
                     <span className="material-symbols-outlined text-white text-6xl opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-500 delay-100">add</span>
                   </div>
                 </div>
 
-                {/* Featured Content */}
                 <div className="flex flex-col justify-center">
                   <div className="flex items-center gap-3 mb-5">
                     <span className="px-3 py-1 bg-primary/10 text-primary rounded-full font-bold uppercase tracking-wider text-[11px]">
@@ -214,7 +206,6 @@ export default function IntelligenceReader() {
               </article>
             )}
 
-            {/* Grid Posts */}
             {gridArticles.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
                 {gridArticles.map((article, idx) => (
@@ -223,7 +214,6 @@ export default function IntelligenceReader() {
                     onClick={() => setSelectedArticle(article)}
                     className="flex flex-col cursor-pointer group"
                   >
-                    {/* Image Block */}
                     <div className="relative aspect-[16/10] overflow-hidden rounded-2xl mb-5 bg-surface-variant/30">
                       {article.image_url ? (
                         <img 
@@ -239,7 +229,6 @@ export default function IntelligenceReader() {
                       </div>
                     </div>
                     
-                    {/* Content */}
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{article.source}</span>
                       <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
@@ -259,13 +248,11 @@ export default function IntelligenceReader() {
         )}
       </div>
 
-      {/* Article Details Modal */}
       {selectedArticle && (
         <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/60 backdrop-blur-sm p-4 md:p-6 transition-opacity duration-300">
           <div className="w-full max-w-4xl bg-surface max-h-[90vh] overflow-y-auto shadow-2xl rounded-3xl md:rounded-[2.5rem] border border-outline-variant/20 flex flex-col relative transform transition-all duration-500 opacity-100 scale-100">
             <div className="p-6 md:p-12 flex-1 flex flex-col">
               
-              {/* Modal Header */}
               <div className="flex justify-between items-start mb-10 gap-6">
                 <h2 className="font-headline text-3xl md:text-5xl font-bold leading-[1.1] tracking-tight">{selectedArticle.title}</h2>
                 <button 
@@ -276,20 +263,17 @@ export default function IntelligenceReader() {
                 </button>
               </div>
               
-              {/* Large Image */}
               {selectedArticle.image_url && (
                 <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden mb-10 shadow-sm bg-surface-variant/30">
                   <img src={selectedArticle.image_url} className="w-full h-full object-cover" alt="Article Hero" />
                 </div>
               )}
 
-              {/* At a Glance */}
               <h3 className="text-xl md:text-2xl font-bold italic mb-4 font-headline text-on-surface">At a Glance</h3>
               <p className="text-on-surface-variant text-[16px] md:text-lg leading-relaxed mb-10">
                 {selectedArticle.summary}
               </p>
 
-              {/* Details (Bullet Points) */}
               {selectedArticle.details && selectedArticle.details.length > 0 && (
                 <>
                   <h3 className="text-xl md:text-2xl font-bold italic mb-4 font-headline text-on-surface">Details</h3>
@@ -304,7 +288,6 @@ export default function IntelligenceReader() {
                 </>
               )}
 
-              {/* Why It Matters */}
               {selectedArticle.why_it_matters && (
                 <>
                   <h3 className="text-xl md:text-2xl font-bold italic mb-4 font-headline text-on-surface">Why It Matters</h3>
@@ -316,7 +299,6 @@ export default function IntelligenceReader() {
                 </>
               )}
 
-              {/* Meta Footer */}
               <div className="mt-auto pt-8 border-t border-outline-variant/30 flex flex-col gap-3">
                 <div className="text-[15px] font-bold text-on-surface-variant flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px]">calendar_today</span>

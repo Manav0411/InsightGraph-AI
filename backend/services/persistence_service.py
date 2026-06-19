@@ -65,13 +65,11 @@ def save_briefing(db: Session, user_id: str, response: NewsletterResponse) -> Br
     create_or_get_user(db, user_id)
     trust_metrics = response.trust_metrics.model_dump() if response.trust_metrics else {}
     
-    # Compute Denormalized Metadata
     all_tags = []
     sources = []
     top_article = None
     max_trend = -1
     
-    # Extract personalization metadata from recommendation reasons
     matched_topics_set = set()
     matched_sources_set = set()
     total_boosts = 0
@@ -80,7 +78,6 @@ def save_briefing(db: Session, user_id: str, response: NewsletterResponse) -> Br
         all_tags.extend(a.tags)
         sources.append(a.source)
         
-        # Parse recommendation reasons
         for reason in a.recommendation_reasons:
             if "Matches preferred topic:" in reason:
                 topic = reason.split("Matches preferred topic:")[1].split("(")[0].strip()
@@ -110,7 +107,6 @@ def save_briefing(db: Session, user_id: str, response: NewsletterResponse) -> Br
     normalized_trend = min(avg_trend * 5, 100.0)
     sqi = round((grounding * 0.4) + (validation * 0.3) + (normalized_trend * 0.3), 1)
 
-    # Generate dynamic title
     if dominant_topics:
         top_two = dominant_topics[:2]
         title_suffix = " & ".join(top_two)
@@ -164,7 +160,6 @@ def save_briefing(db: Session, user_id: str, response: NewsletterResponse) -> Br
     db.refresh(db_briefing)
     logger.info(f"[Persistence] Saved briefing {db_briefing.id} with SQI {sqi}")
     
-    # Ingest into Vector Memory
     try:
         from backend.services.vector_store import memory_manager
         memory_manager.store_briefing(db_briefing)
@@ -177,7 +172,6 @@ def fetch_latest_briefing(db: Session, user_id: str):
     return db.query(Briefing).filter(Briefing.user_id == user_id).order_by(desc(Briefing.created_at)).first()
 
 def fetch_briefing_history_filtered(db: Session, user_id: str, limit: int = 50):
-    # Base filter implementation, extensible via kwargs
     return db.query(Briefing).filter(Briefing.user_id == user_id).order_by(desc(Briefing.created_at)).limit(limit).all()
 
 def fetch_briefing_with_articles(db: Session, briefing_id: str):

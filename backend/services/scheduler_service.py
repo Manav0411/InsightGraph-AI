@@ -43,7 +43,6 @@ def start_scheduler(app):
     logger.info("[scheduler] Initializing APScheduler...")
     scheduler = AsyncIOScheduler()
     
-    # Run daily at 8:00 AM
     scheduler.add_job(
         daily_intelligence_generation,
         trigger=CronTrigger(hour=8, minute=0),

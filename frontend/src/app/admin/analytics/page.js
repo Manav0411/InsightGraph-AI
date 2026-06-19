@@ -21,7 +21,6 @@ export default function Analytics() {
         if (res.ok) {
           const json = await res.json();
           
-          // Convert ISO UTC strings to localized short strings for chart axes
           const formatChartDate = (isoString) => {
             const d = new Date(isoString);
             return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -90,7 +89,6 @@ export default function Analytics() {
           <p className="text-on-surface-variant text-xl leading-relaxed">Longitudinal platform memory and signal evolution across historical briefings.</p>
         </div>
         
-        {/* Date Range Filter */}
         <div className="flex bg-surface-container-high rounded-lg p-1 shadow-inner shrink-0">
           <button 
             onClick={() => setDateFilter('7d')}
@@ -113,7 +111,6 @@ export default function Analytics() {
         </div>
       </header>
 
-      {/* Section A: Platform Intelligence Trends */}
       <section className="flex flex-col gap-8">
         <div className="flex items-center gap-3 border-b border-outline-variant/30 pb-4">
           <span className="material-symbols-outlined text-primary text-3xl">insights</span>
@@ -198,7 +195,6 @@ export default function Analytics() {
         </div>
       </section>
 
-      {/* Section C: Operational Telemetry */}
       <section className="flex flex-col gap-8">
         <div className="flex items-center gap-3 border-b border-outline-variant/30 pb-4">
           <span className="material-symbols-outlined text-on-surface-variant text-2xl">memory</span>

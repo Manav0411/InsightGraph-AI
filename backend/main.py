@@ -21,7 +21,6 @@ app = FastAPI(
 
 import os
 
-# Enable CORS for frontend integration
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 allow_origins = [frontend_url, "http://localhost:3000", "http://127.0.0.1:3000"]
 
@@ -33,7 +32,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register Routers
 app.include_router(newsletter.router)
 app.include_router(users.router)
 app.include_router(metrics.router)
@@ -53,7 +51,6 @@ async def health():
 async def startup_event():
     logger.info("Initializing application and verifying DB connectivity...")
     
-    # Recover tasks
     from backend.services.task_manager import load_tasks, active_tasks, save_tasks
     load_tasks()
     recovered_count = 0
@@ -68,13 +65,10 @@ async def startup_event():
         logger.info(f"Recovered and marked {recovered_count} in-flight tasks as failed.")
         
     try:
-        # A lightweight connection test
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
         logger.info("PostgreSQL connectivity verified successfully on startup.")
         
-        # Temporary auto-creation of tables (Before Alembic)
-        # Import models here to register them with Base.metadata to avoid circular imports
         from backend.models.db_user import User
         from backend.models.db_preferences import UserPreferences
         from backend.models.db_briefing import Briefing
@@ -84,8 +78,6 @@ async def startup_event():
         Base.metadata.create_all(bind=engine)
         logger.info("SQLAlchemy metadata verified tables.")
         
-        # Note: Local APScheduler has been removed for production readiness.
-        # Intelligence generation is now triggered securely via external Cron Job hitting POST /scheduler/run-now
         
     except Exception as e:
         logger.error(f"PostgreSQL connectivity failed on startup: {e}")

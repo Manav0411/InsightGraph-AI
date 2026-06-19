@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { API_BASE_URL } from '../../../lib/config';
 import { useUser } from '../../../context/UserContext';
 
-// --- Frontend Narrative Engine ---
 const generateContextualEvolution = (briefing, prevBriefing) => {
   const topics = briefing.metadata?.dominant_topics || [];
   if (topics.length > 0) {
@@ -21,7 +20,6 @@ const generateContextualEvolution = (briefing, prevBriefing) => {
   }
   return "Stable intelligence ecosystem detected with consistent source reliability across evaluated metrics.";
 };
-// --------------------------------
 
 export default function HistoricalBriefingViewer() {
   const { id } = useParams();
@@ -43,7 +41,6 @@ export default function HistoricalBriefingViewer() {
           setBriefing(json);
         }
         
-        // Fetch context
         const histRes = await fetch(`${API_BASE_URL}/newsletter/history`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -91,7 +88,6 @@ export default function HistoricalBriefingViewer() {
   const safeDateString = briefing.generated_at.endsWith('Z') ? briefing.generated_at : briefing.generated_at + 'Z';
   const date = new Date(safeDateString).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   
-  // Intelligence Context Layer Simulation
   const sqi = briefing.metrics.signal_quality_index || 100;
   const recentBriefings = historyContext.filter(b => b.id !== id).slice(0, 2);
   const prevBriefing = historyContext.find(b => b.id !== id && new Date(b.generated_at) < new Date(briefing.generated_at));
@@ -120,7 +116,6 @@ export default function HistoricalBriefingViewer() {
           </button>
         </div>
 
-        {/* Intelligence Context Layer */}
         <div className="bg-surface-container-low rounded-3xl p-6 border border-outline-variant/30 flex flex-col md:flex-row gap-6 items-center">
           <div className="w-20 h-20 rounded-full bg-surface shadow-sm border border-outline-variant/20 flex items-center justify-center text-3xl font-bold text-primary shrink-0">
             {sqi}
@@ -141,7 +136,6 @@ export default function HistoricalBriefingViewer() {
         </div>
       </header>
 
-      {/* Related Historical Signals */}
       {recentBriefings.length > 0 && (
         <section className="bg-surface rounded-[2.5rem] p-8 border border-outline-variant/20">
           <h2 className="font-headline text-xl font-bold text-on-surface mb-4">Related Historical Signals</h2>
@@ -160,7 +154,6 @@ export default function HistoricalBriefingViewer() {
         </section>
       )}
 
-      {/* Articles Rendering */}
       <section className="flex flex-col gap-8 mt-4">
         {briefing.articles.map((article, i) => (
           <article key={i} className="bg-surface rounded-[2rem] p-8 border border-outline-variant/30 shadow-sm relative overflow-hidden group">
@@ -178,7 +171,6 @@ export default function HistoricalBriefingViewer() {
                   {(article.source === 'hacker_news' || article.source === 'reddit') && <span className="text-[9px] opacity-70 mt-0.5">Community Vetted</span>}
                 </span>
                 
-                {/* Trend Score Visualizer */}
                 <div className="flex flex-col gap-1 ml-2">
                   <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Trend Intensity</div>
                   <div className="flex items-center gap-2">
@@ -206,7 +198,6 @@ export default function HistoricalBriefingViewer() {
               </div>
             )}
 
-            {/* Why This Signal Was Elevated */}
             {article.recommendation_reasons && article.recommendation_reasons.length > 0 && (
               <div className="mb-6 bg-surface-container-low p-5 rounded-2xl border border-outline-variant/30">
                 <h4 className="font-bold mb-3 uppercase tracking-wide text-[11px] text-on-surface-variant flex items-center gap-2">

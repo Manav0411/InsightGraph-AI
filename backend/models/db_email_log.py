@@ -16,14 +16,11 @@ class EmailDeliveryLog(Base):
     error_message = Column(Text, nullable=True)
     delivered_at = Column(DateTime, default=datetime.utcnow)
     
-    # Advanced Telemetry
     provider_message_id = Column(String, nullable=True)
     delivery_type = Column(String, nullable=False, default="daily_digest")
     template_version = Column(String, nullable=False, default="v1.0")
     
-    # Historical Rendering Traceability
     rendered_email_html = Column(Text, nullable=True)
 
-    # Relationships
     user = relationship("User", backref="email_logs")
     briefing = relationship("Briefing", backref="email_logs")

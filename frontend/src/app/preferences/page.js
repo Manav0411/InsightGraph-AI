@@ -114,16 +114,13 @@ export default function Preferences() {
 
   return (
     <div className="w-full max-w-6xl space-y-8 mx-auto">
-      {/* Page Header */}
       <header className="mb-10">
         <h1 className="font-headline text-4xl font-bold text-on-surface mb-2">Personalization Preferences</h1>
         <p className="text-on-surface-variant text-lg leading-relaxed max-w-2xl">Tailor your InsightGraph experience by managing what matters most. Your configurations directly influence the intelligence briefings and analytics surfaced to you.</p>
       </header>
 
-      {/* Bento Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-min">
         
-        {/* Core Topics Card (Spans 2 columns) */}
         <div className="lg:col-span-2 bg-gradient-to-br from-surface-container-low to-transparent rounded-2xl p-8 border border-outline-variant/30 shadow-sm flex flex-col h-full">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -158,7 +155,6 @@ export default function Preferences() {
                 <button onClick={() => removeTopic(i)} className="hover:text-error transition-colors flex items-center"><span className="material-symbols-outlined text-[18px]">close</span></button>
               </div>
             ))}
-            {/* Add New Pill Button & Dropdown */}
             <div className="relative" ref={suggestionsRef}>
               <button 
                 onClick={() => setShowSuggestions(!showSuggestions)}
@@ -194,7 +190,6 @@ export default function Preferences() {
           </div>
         </div>
 
-        {/* Exclusions Card (Spans 1 column) */}
         <div className="lg:col-span-1 bg-gradient-to-br from-surface-container-low to-transparent rounded-2xl p-8 border border-outline-variant/30 shadow-sm flex flex-col h-full">
           <div className="mb-6">
             <h3 className="font-headline text-xl font-semibold text-on-surface flex items-center gap-2">
@@ -224,7 +219,6 @@ export default function Preferences() {
           </div>
         </div>
 
-        {/* Trusted Sources Card */}
         <div className="lg:col-span-1 bg-gradient-to-br from-surface-container-low to-transparent rounded-2xl p-8 border border-outline-variant/30 shadow-sm">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -271,7 +265,6 @@ export default function Preferences() {
           )}
         </div>
 
-        {/* Delivery Preferences Card (Spans 2 columns) */}
         <div className="lg:col-span-2 bg-gradient-to-br from-surface-container-low to-transparent rounded-2xl p-8 border border-outline-variant/30 shadow-sm">
           <div className="mb-6">
             <h3 className="font-headline text-xl font-semibold text-on-surface flex items-center gap-2">
@@ -299,7 +292,6 @@ export default function Preferences() {
 
       </div>
 
-      {/* Actions Footer */}
       <div className="flex justify-end gap-4 pt-8 mt-10">
         <button className="px-6 py-3 rounded-xl font-bold text-on-surface hover:bg-surface-variant/50 transition-all duration-300">Discard Changes</button>
         <button onClick={savePreferences} disabled={saving} className="px-6 py-3 rounded-xl font-bold text-on-primary bg-gradient-to-r from-primary to-primary/80 hover:-translate-y-0.5 transition-all duration-300 shadow-[0_4px_12px_rgba(74,124,89,0.3)] hover:shadow-[0_6px_20px_rgba(74,124,89,0.35)] disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none">

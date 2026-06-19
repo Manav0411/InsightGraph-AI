@@ -20,7 +20,6 @@ export default function NavLinks({ isAdmin }) {
 
   return (
     <>
-      {/* Desktop Navigation */}
       <div className="hidden md:flex gap-6 h-full items-center order-first md:mr-4">
         {links.map((link) => {
           const isActive = pathname === link.href;
@@ -44,7 +43,6 @@ export default function NavLinks({ isAdmin }) {
         })}
       </div>
 
-      {/* Mobile Hamburger Button */}
       <div className="md:hidden flex items-center order-last ml-2">
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -54,7 +52,6 @@ export default function NavLinks({ isAdmin }) {
         </button>
       </div>
 
-      {/* Mobile Menu Dropdown */}
       {isOpen && (
         <div className="absolute top-16 left-0 w-full bg-surface border-b border-outline-variant/20 shadow-lg md:hidden flex flex-col py-4 px-6 gap-2 animate-in slide-in-from-top-2 duration-200">
           {links.map((link) => {

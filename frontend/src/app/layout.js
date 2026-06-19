@@ -57,7 +57,6 @@ export default async function RootLayout({ children }) {
             </div>
           </nav>
           
-          {/* Main Content Layout */}
           <div className="flex-1 flex max-w-[1400px] mx-auto w-full relative pt-16">
             <main className="flex-1 p-6 md:p-8 lg:p-10 w-full overflow-y-auto">
               {children}

@@ -23,7 +23,6 @@ async def clerk_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.body()
     headers = request.headers
 
-    # Extract Svix headers
     svix_id = headers.get("svix-id")
     svix_timestamp = headers.get("svix-timestamp")
     svix_signature = headers.get("svix-signature")
@@ -34,7 +33,6 @@ async def clerk_webhook(request: Request, db: Session = Depends(get_db)):
 
     wh = Webhook(secret)
     try:
-        # svix expects payload as bytes or string. Request.body() is bytes.
         event = wh.verify(payload, headers)
     except WebhookVerificationError as e:
         logger.error(f"Webhook verification failed: {str(e)}")

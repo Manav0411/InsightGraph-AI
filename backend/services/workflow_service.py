@@ -20,14 +20,11 @@ async def run_newsletter_workflow(request: NewsletterRequest, user_profile, task
     user_id = request.user_id
     logger.info(f"[API] Newsletter generation requested for user: {user_id}")
     
-    # 2. Initialize State
     
-    # 2. Initialize State
     initial_state = PipelineState(
         user_profile=user_profile
     )
     
-    # 3. Create and Run Graph
     graph = create_newsletter_graph()
     
     start_time = time.perf_counter()
@@ -35,7 +32,6 @@ async def run_newsletter_workflow(request: NewsletterRequest, user_profile, task
     if task_id:
         from backend.services.task_manager import update_task_stage
         final_state = None
-        # Use stream_mode="values" to get the full state after every node executes
         async for state_value in graph.astream(initial_state, stream_mode="values"):
             stage = state_value.get("pipeline_stage", "Initializing...")
             update_task_stage(task_id, f"Running: {stage}")
@@ -47,7 +43,6 @@ async def run_newsletter_workflow(request: NewsletterRequest, user_profile, task
     
     execution_time = round(end_time - start_time, 2)
     
-    # 4. Extract data from final state
     state_obj = PipelineState(**final_state)
     metadata = state_obj.metadata
     

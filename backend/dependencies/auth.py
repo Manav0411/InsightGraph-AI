@@ -14,19 +14,16 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(
     """
     token = credentials.credentials
     try:
-        # Decode without verification just to extract the 'iss' (issuer)
         unverified_claims = jwt.decode(token, options={"verify_signature": False})
         
         issuer = unverified_claims.get("iss")
         if not issuer:
             raise HTTPException(status_code=401, detail="Token missing issuer")
             
-        # Dynamically fetch the JWKS payload from Clerk
         jwks_url = f"{issuer}/.well-known/jwks.json"
         jwks_client = PyJWKClient(jwks_url)
         signing_key = jwks_client.get_signing_key_from_jwt(token)
         
-        # Verify the signature cryptographically
         data = jwt.decode(
             token,
             signing_key.key,

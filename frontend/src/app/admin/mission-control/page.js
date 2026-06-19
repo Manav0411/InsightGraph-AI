@@ -78,7 +78,6 @@ export default function CommandCenter() {
     const startTime = Date.now();
     let currentLogs = [];
     
-    // Update elapsed time
     const timerInterval = setInterval(() => {
       setGenerateProgress(prev => prev ? { ...prev, elapsed: ((Date.now() - startTime) / 1000).toFixed(1) + 's' } : null);
     }, 100);
@@ -86,7 +85,6 @@ export default function CommandCenter() {
     try {
       const token = await getToken();
       
-      // 1. Trigger the background task
       const initialResponse = await fetch(`${API_BASE_URL}/newsletter/generate-async`, {
         method: 'POST',
         headers: { 
@@ -105,7 +103,6 @@ export default function CommandCenter() {
       let stagesCount = 0;
       let lastStage = '';
       
-      // 2. Poll the status endpoint every 3 seconds
       const pollInterval = setInterval(async () => {
         try {
           const currentToken = await getToken();
@@ -147,7 +144,6 @@ export default function CommandCenter() {
           }
         } catch (pollErr) {
           console.error("Polling error:", pollErr);
-          // Don't fail the whole process on a single missed poll, just keep trying
         }
       }, 3000);
       
@@ -158,7 +154,6 @@ export default function CommandCenter() {
       currentLogs = [...currentLogs, `[SYS] ERROR: ${error.message}. Signal synthesis interrupted.`].slice(-4);
       setGenerateProgress(prev => ({ ...prev, stage: 'Failed', log: currentLogs }));
       
-      // Let user read the error before resetting
       setTimeout(() => setIsGenerating(false), 5000);
     }
   };
@@ -168,14 +163,12 @@ export default function CommandCenter() {
   const trustMetrics = data?.trust_metrics || { grounding_reliability_pct: 94.8, validation_success_rate: 90.0 };
   const avgSqi = data?.metrics?.avg_sqi ? (data.metrics.avg_sqi * 10).toFixed(1) : '95.0';
   const totalArticles = data?.articles?.length || 10;
-  // Assume a 3x scrape ratio for display if not provided
   const scrapedArticles = totalArticles * 3;
   const hallucinationsCaught = scrapedArticles - totalArticles - Math.floor(scrapedArticles * 0.1); // Fake number based on output
 
   return (
     <div className="flex flex-col items-center max-w-5xl mx-auto w-full gap-10 pb-20">
       
-      {/* Top Synthesize Button Area */}
       <div className="w-full flex flex-col items-center pt-8">
         <div className="relative group">
           <button 
@@ -204,7 +197,6 @@ export default function CommandCenter() {
 
       <PipelineProgress active={isGenerating} progressData={generateProgress} />
 
-      {/* Advanced Telemetry Panel */}
       <div className="w-full bg-surface-container-low rounded-3xl border border-outline-variant/20 p-8 soft-shadow">
         <div className="flex justify-between items-center mb-8 border-b border-outline-variant/20 pb-4">
           <h2 className="font-headline text-2xl font-bold text-on-surface flex items-center gap-2">
@@ -219,7 +211,6 @@ export default function CommandCenter() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           
-          {/* Metric 1: Evaluator Resilience */}
           <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-primary/30 transition-colors">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full blur-2xl"></div>
             <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Evaluator Resilience</h3>
@@ -238,7 +229,6 @@ export default function CommandCenter() {
             </div>
           </div>
 
-          {/* Metric 2: Articles Scraped */}
           <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-primary/30 transition-colors">
             <div className="absolute top-0 right-0 w-24 h-24 bg-tertiary/10 rounded-bl-full blur-2xl"></div>
             <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Articles Scraped</h3>
@@ -253,7 +243,6 @@ export default function CommandCenter() {
             </div>
           </div>
 
-          {/* Metric 3: Hallucinations Caught */}
           <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-error/30 transition-colors">
             <div className="absolute top-0 right-0 w-24 h-24 bg-error/10 rounded-bl-full blur-2xl"></div>
             <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Anomalies Caught</h3>
@@ -271,7 +260,6 @@ export default function CommandCenter() {
             </div>
           </div>
 
-          {/* Metric 4: SQI Score */}
           <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-primary/30 transition-colors">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full blur-2xl"></div>
             <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">SQI Score</h3>
@@ -287,13 +275,10 @@ export default function CommandCenter() {
         </div>
       </div>
 
-      {/* Ecosystem Insights Panel */}
       <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Operations & History (Left Column) */}
         <div className="lg:col-span-1 flex flex-col gap-6">
           
-          {/* Active Pipeline Parameters */}
           <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20 soft-shadow flex flex-col h-1/2">
             <h3 className="font-headline text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-[20px]">tune</span> Active Pipeline Parameters
@@ -332,7 +317,6 @@ export default function CommandCenter() {
             </div>
           </div>
 
-          {/* Recent Orchestration Runs */}
           <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20 soft-shadow flex flex-col h-1/2">
             <h3 className="font-headline text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-secondary text-[20px]">history</span> Recent Orchestration Runs
@@ -359,7 +343,6 @@ export default function CommandCenter() {
 
         </div>
 
-        {/* Live Signal Radar (Right Column) */}
         <div className="lg:col-span-2 bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20 soft-shadow flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2">
@@ -408,7 +391,6 @@ export default function CommandCenter() {
 
       </div>
       
-      {/* Bottom CTA */}
       <div className="flex items-center justify-center mt-4">
         <a href="/" className="group flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-bold uppercase tracking-widest text-sm">
           Return to Intelligence Reader 

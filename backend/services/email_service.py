@@ -12,9 +12,6 @@ logger = get_logger("email_service")
 
 resend.api_key = os.environ.get("RESEND_API_KEY", "")
 
-# ---------------------------------------------------------
-# HTML Render Components (Terra Design Language)
-# ---------------------------------------------------------
 
 def render_header(briefing: Briefing) -> str:
     date_str = briefing.generated_at.strftime("%B %d, %Y")
@@ -140,9 +137,6 @@ def generate_plaintext(user: User, briefing: Briefing) -> str:
     
     return "\n".join(lines)
 
-# ---------------------------------------------------------
-# Delivery Layer
-# ---------------------------------------------------------
 
 async def send_briefing_email(db: Session, user: User, briefing: Briefing):
     """
@@ -154,7 +148,6 @@ async def send_briefing_email(db: Session, user: User, briefing: Briefing):
     html_content = generate_editorial_html(user, briefing)
     text_content = generate_plaintext(user, briefing)
     
-    # We will use a dummy email if user.email is missing for testing purposes
     recipient_email = user.email if user.email else "user@example.com"
     
     delivery_log = EmailDeliveryLog(
@@ -182,7 +175,6 @@ async def send_briefing_email(db: Session, user: User, briefing: Briefing):
     }
 
     try:
-        # Hard timeout to guarantee scheduler isolation
         response = await asyncio.wait_for(
             asyncio.to_thread(resend.Emails.send, params), 
             timeout=10.0
