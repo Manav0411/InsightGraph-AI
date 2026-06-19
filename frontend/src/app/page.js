@@ -156,7 +156,7 @@ export default function IntelligenceReader() {
         {articles.length === 0 ? (
           <div className="text-center py-24 text-on-surface-variant">
             <span className="material-symbols-outlined text-5xl text-outline-variant mb-4 opacity-50">radar</span>
-            <p className="font-medium text-lg">Your radar is tuning. Your first briefing will be delivered at 6:00 AM.</p>
+            <p className="font-medium text-lg">Your radar is tuning. Your first briefing will be delivered at 8:00 AM.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-16">

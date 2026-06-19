@@ -22,7 +22,13 @@ app = FastAPI(
 import os
 
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-allow_origins = [frontend_url, "http://localhost:3000", "http://127.0.0.1:3000"]
+allow_origins = [
+    frontend_url, 
+    "http://localhost:3000", 
+    "http://127.0.0.1:3000",
+    "https://insightgraph.dev",
+    "https://www.insightgraph.dev"
+]
 
 app.add_middleware(
     CORSMiddleware,
