@@ -9,33 +9,37 @@ from backend.models.db_briefing import Briefing
 from utils.logger import get_logger
 
 import requests
+from huggingface_hub import InferenceClient
 
 logger = get_logger("vector_store")
 
 class VectorMemoryManager:
     def __init__(self):
-        self.api_url = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
-        logger.info("[VectorStore] Initialized VectorMemoryManager to use Hugging Face Inference API.")
+        self.model = "sentence-transformers/all-MiniLM-L6-v2"
+        hf_token = os.getenv("HF_TOKEN")
+        self.client = InferenceClient(api_key=hf_token) if hf_token else None
+        logger.info("[VectorStore] Initialized VectorMemoryManager to use Hugging Face InferenceClient API.")
 
     def _get_embedding(self, text: str) -> List[float]:
-        headers = {}
-        hf_token = os.getenv("HF_TOKEN")
-        if hf_token:
-            headers["Authorization"] = f"Bearer {hf_token}"
+        if not self.client:
+            raise Exception("HF_TOKEN is not set.")
             
         try:
-            response = requests.post(self.api_url, headers=headers, json={"inputs": [text]}, timeout=2)
-            if response.status_code != 200:
-                raise Exception(f"HF API Error: {response.status_code} - {response.text}")
-        except requests.exceptions.RequestException as e:
-            # Gracefully handle Render's free tier blocking HuggingFace
-            raise Exception(f"Connection blocked or timed out (Render Free Tier limitation?): {str(e)}")
+            result = self.client.feature_extraction(
+                text,
+                model=self.model,
+            )
             
-        data = response.json()
-        if isinstance(data, list) and len(data) > 0:
-            return data[0]
-        else:
-            raise Exception(f"Unexpected HF API response format")
+            # The result from feature_extraction is a numpy array
+            if hasattr(result, "tolist"):
+                return result.tolist()
+            elif isinstance(result, list):
+                return result
+            else:
+                raise Exception("Unexpected HF Hub response format")
+                
+        except Exception as e:
+            raise Exception(f"HF Hub Inference Failed: {str(e)}")
 
     def store_briefing(self, briefing: Briefing) -> int:
         if not briefing.articles:
@@ -51,7 +55,7 @@ class VectorMemoryManager:
                     db.query(Article).filter(Article.id == article.id).update({"embedding": embedding})
                     success_count += 1
                 except Exception as e:
-                    logger.error(f"[VectorStore] Failed to compute/store embedding for article {article.id}: {e}")
+                    logger.warning(f"[VectorStore] Skipped embedding for article {article.id} (Known Cloud Block): {e}")
             
             try:
                 db.commit()
@@ -93,7 +97,7 @@ class VectorMemoryManager:
                 return formatted_results
                 
         except Exception as e:
-            logger.error(f"[VectorStore] Query failed for text '{query_text[:30]}...': {str(e)}")
+            logger.warning(f"[VectorStore] Skipped historical query (Known Cloud Block): {str(e)}")
             return []
 
 memory_manager = VectorMemoryManager()

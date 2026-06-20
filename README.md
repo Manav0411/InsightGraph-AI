@@ -22,27 +22,29 @@ InsightGraph utilizes an agentic orchestration pipeline to retrieve daily signal
 
 ```text
 ai_trend_intelligence/
-├── backend/
-│   ├── agents/          # LangGraph agents (analyzer, evaluator, composer)
-│   ├── config/          # Centralized settings and constants
+├── agents/              # LangGraph agents (analyzer, evaluator, composer)
+├── backend/             # FastAPI Backend infrastructure
 │   ├── db/              # SQLAlchemy database configuration
-│   ├── models/          # Pydantic and SQLAlchemy models
-│   ├── prompts/         # Decoupled LLM system prompts
 │   ├── routes/          # FastAPI HTTP endpoints
-│   ├── services/        # Core business logic (retrievers, vector store, persistence)
+│   ├── services/        # Orchestration hooks and persistence
 │   └── main.py          # FastAPI application entry point
-├── frontend/
+├── config/              # Centralized settings and constants
+├── frontend/            # Next.js Application
 │   ├── public/          # Static assets
 │   ├── src/
-│   │   ├── app/         # Next.js App Router pages and layouts
+│   │   ├── app/         # App Router pages and layouts
 │   │   ├── components/  # Reusable React components (UI, Theme, Clerk)
 │   │   ├── context/     # React Context providers
 │   │   └── lib/         # Utility functions and API clients
 │   ├── package.json     # Node dependencies
 │   └── tailwind.config.js # TailwindCSS configuration
+├── graphs/              # LangGraph state machine definitions
+├── memory/              # Short-term thread memory
+├── models/              # Pydantic state schemas and SQLAlchemy DB models
+├── prompts/             # Decoupled LLM system prompts
+├── services/            # Core business logic (retrievers, APIs)
 ├── utils/               # Shared utilities (logger, content cleaner)
-├── .github/
-│   └── workflows/       # GitHub Actions for CI/CD and cron scheduling
+├── .github/             # GitHub Actions for CI/CD and cron scheduling
 ├── learning.md          # Project knowledge and architecture repository
 ├── requirements.txt     # Python dependencies
 └── README.md            # Project documentation
