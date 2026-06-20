@@ -2,8 +2,8 @@ name: Daily InsightGraph Briefing
 
 on:
   schedule:
-    # Runs at 08:00 UTC every day
-    - cron: '0 8 * * *'
+    # Runs at 02:30 UTC every day (which is 08:00 AM IST)
+    - cron: '30 2 * * *'
   workflow_dispatch:
     # Allows you to trigger it manually from the GitHub Actions tab!
 
