@@ -28,11 +28,11 @@ def _get_top_comments(kids: List[int], max_comments: int = 5) -> str:
         if kid_data and not kid_data.get('deleted') and not kid_data.get('dead') and 'text' in kid_data:
             from html import unescape
             import re
-            # Basic HTML strip
+                              
             text = re.sub(r'<[^>]+>', ' ', kid_data['text'])
             text = unescape(text).strip()
             comments_text.append(f"- {text}")
-            time.sleep(0.1) # Respect API limits
+            time.sleep(0.1)                     
     return "\n\n".join(comments_text)
 
 def fetch_hacker_news(topics: List[str] = None, max_results: int = 5) -> List[Dict[str, Any]]:
@@ -42,7 +42,7 @@ def fetch_hacker_news(topics: List[str] = None, max_results: int = 5) -> List[Di
     """
     all_results = []
     
-    # Always fetch a broad list of top AI stories (limit 30)
+                                                            
     query = "AI"
     encoded_query = urllib.parse.quote(query)
     url = f"http://hn.algolia.com/api/v1/search?query={encoded_query}&tags=story&numericFilters=points>50&hitsPerPage=30"
@@ -56,18 +56,18 @@ def fetch_hacker_news(topics: List[str] = None, max_results: int = 5) -> List[Di
         raw_hits = data.get('hits', [])
         filtered_hits = []
         
-        # Local Filtering: Match against preferred topics
+                                                         
         if topics and len(topics) > 0:
             lowercase_topics = [t.lower() for t in topics]
             for hit in raw_hits:
                 text_to_search = (hit.get('title', '') + " " + hit.get('story_text', '')).lower()
-                # If any topic keyword is in the text, keep it
+                                                              
                 if any(topic in text_to_search for topic in lowercase_topics):
                     filtered_hits.append(hit)
         else:
             filtered_hits = raw_hits
             
-        # Take the top max_results after filtering
+                                                  
         final_hits = filtered_hits[:max_results]
         
         if not final_hits and raw_hits:
@@ -79,7 +79,7 @@ def fetch_hacker_news(topics: List[str] = None, max_results: int = 5) -> List[Di
             title = hit.get('title', '')
             url = hit.get('url', f"https://news.ycombinator.com/item?id={story_id}")
             
-            # Fetch the actual item from Firebase to get comment IDs (kids)
+                                                                           
             story_data = _fetch_hn_item(story_id)
             kids = story_data.get('kids', [])
             
@@ -95,12 +95,12 @@ def fetch_hacker_news(topics: List[str] = None, max_results: int = 5) -> List[Di
                 "content": content,
                 "image_url": extract_og_image(url),
                 "source": "hacker_news",
-                "stars": hit.get('points', 0) # Map upvotes to stars field for generic scoring if needed
+                "stars": hit.get('points', 0)                                                           
             })
             
         logger.info(f"Retrieved {len(all_results)} filtered stories from Hacker News.")
         
-        # Cache the successful results to disk
+                                              
         if all_results:
             try:
                 with open(CACHE_FILE, 'w') as f:

@@ -8,7 +8,7 @@ from utils.image_utils import extract_og_image
 
 logger = get_logger("rss_service")
 
-# Official AI Lab Blogs
+                       
 RSS_FEEDS = {
     "Hugging Face": "https://huggingface.co/blog/feed.xml",
     "VentureBeat AI": "https://venturebeat.com/category/ai/feed/",
@@ -36,16 +36,16 @@ def fetch_rss_feeds(max_per_feed: int = 3) -> List[Dict[str, Any]]:
             root = ET.fromstring(xml_data)
             namespace = {'atom': 'http://www.w3.org/2005/Atom'}
             
-            # Find all <item> (RSS) or <entry> (Atom)
+                                                     
             items = root.findall('.//item')
             if not items:
-                # Atom namespace fallback
+                                         
                 items = root.findall('.//atom:entry', namespace)
                 
             feed_articles = []
             
             for item in items:
-                # Handle standard RSS
+                                     
                 title_elem = item.find('title')
                 link_elem = item.find('link')
                 desc_elem = item.find('description')
@@ -57,11 +57,11 @@ def fetch_rss_feeds(max_per_feed: int = 3) -> List[Dict[str, Any]]:
                         dt = parsedate_to_datetime(pub_date)
                         now = datetime.datetime.now(datetime.timezone.utc)
                         if (now - dt).days > 7:
-                            continue # Skip old articles
+                            continue                    
                     except Exception:
-                        pass # Ignore parsing errors and accept it
+                        pass                                      
                         
-                # Handle Atom alternative
+                                         
                 if title_elem is None:
                     title_elem = item.find('atom:title', namespace)
                 if desc_elem is None:
@@ -80,7 +80,7 @@ def fetch_rss_feeds(max_per_feed: int = 3) -> List[Dict[str, Any]]:
                         
                 description = desc_elem.text.strip() if desc_elem is not None and desc_elem.text else ""
                 
-                # Basic HTML strip for description
+                                                  
                 import re
                 description = re.sub(r'<[^>]+>', ' ', description).strip()
                 
@@ -94,10 +94,10 @@ def fetch_rss_feeds(max_per_feed: int = 3) -> List[Dict[str, Any]]:
                         "_dt": dt
                     })
                     
-            # Sort by parsed datetime descending
+                                                
             feed_articles.sort(key=lambda x: x.get("_dt") or datetime.datetime.min.replace(tzinfo=datetime.timezone.utc), reverse=True)
             
-            # Slice to max_per_feed and remove the temporary _dt field
+                                                                      
             for article in feed_articles[:max_per_feed]:
                 article.pop("_dt", None)
                 all_results.append(article)

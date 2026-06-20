@@ -29,7 +29,7 @@ def rank_articles(state: PipelineState) -> PipelineState:
         title = article.title.lower()
         content = article.content.lower()
         
-        # Check Exclusions First (Hard Drop)
+                                            
         should_drop = False
         if user_profile:
             prefs = user_profile.preferences
@@ -42,25 +42,25 @@ def rank_articles(state: PipelineState) -> PipelineState:
         if should_drop:
             continue
             
-        # Generic metric heuristic: reward highly upvoted/starred posts (Logarithmic scale)
-        # Applies to Hacker News, Reddit, or any source setting 'stars'
+                                                                                           
+                                                                       
         metrics = article.stars or 0
         if metrics > 0:
             import math
-            score += math.log10(metrics)  # e.g., 1000 upvotes -> +3.0
+            score += math.log10(metrics)                              
             
-        # Content keywords heuristics (generic quality markers)
+                                                               
         if "breakthrough" in content or "state-of-the-art" in content or "sota" in content:
             score += 2.0
             
-        # Default baseline
+                          
         score += 1.0
         
-        # Personalization boost logic
+                                     
         p_boost = 0.0
         if user_profile:
             prefs = user_profile.preferences
-            # Preferred sources match (case-insensitive)
+                                                        
             for pref_source in prefs.preferred_sources:
                 if pref_source.lower() == source.lower():
                     p_boost += 2.0
@@ -68,7 +68,7 @@ def rank_articles(state: PipelineState) -> PipelineState:
                     article.recommendation_reasons.append(f"Preferred source: {pref_source} (+2.0)")
                     logger.info(f"Article '{article.title}' matched preferred source '{pref_source}': +2.0 boost")
             
-            # Preferred topics match (case-insensitive)
+                                                       
             for pref_topic in prefs.preferred_topics:
                 pref_topic_lower = pref_topic.lower()
                 if pref_topic_lower in title or pref_topic_lower in content:
@@ -80,21 +80,21 @@ def rank_articles(state: PipelineState) -> PipelineState:
         article.personalization_boost = round(p_boost, 1)
         score += p_boost
         
-        # Cap score rounding
+                            
         article.trend_score = round(score, 1)
         filtered_articles.append(article)
         
-    # Replace original list with filtered list
+                                              
     state.articles = filtered_articles
         
     if user_profile:
         state.metadata.personalization_boosts_applied = boosts_applied_total
         logger.info(f"Total personalization boosts/penalties applied: {boosts_applied_total}")
         
-    # Sort articles by trend_score descending
+                                             
     state.articles = sorted(state.articles, key=lambda x: x.trend_score, reverse=True)
     
-    # Keep top articles based on config for downstream analysis buffer
+                                                                      
     top_articles = state.articles[:MAX_ARTICLES_TO_ANALYZE]
     
     elapsed_time = round(time.perf_counter() - start_time, 2)

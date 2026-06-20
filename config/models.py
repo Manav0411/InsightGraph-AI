@@ -7,7 +7,7 @@ Why centralized configuration is important:
 3. Allows different agents to route to different models based on their task (e.g., using a FAST_MODEL for simple extraction, and a REASONING_MODEL for complex analysis or evaluation).
 """
 
-# Using the standard model IDs supported by Groq. 
-# (If using OpenRouter later, you might prepend "meta-llama/")
+                                                  
+                                                              
 FAST_MODEL = "llama-3.1-8b-instant"
 REASONING_MODEL = "llama-3.3-70b-versatile"

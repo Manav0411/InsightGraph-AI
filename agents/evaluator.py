@@ -30,25 +30,25 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
         tags = article.tags
         trend_score = article.trend_score
         
-        # 1. Reject failed or malformed content
+                                               
         if not summary or "Summary generation failed." in summary or "Analysis failed." in why_it_matters:
             logger.warning(f"Evaluation Warning: Article '{title}' has an invalid summary or analysis. Removing.")
             state.metadata.total_articles_rejected += 1
             continue
             
-        # 2. Reject duplicate titles
+                                    
         if title in seen_titles:
             logger.warning(f"Evaluation Warning: Duplicate article found '{title}'. Removing.")
             state.metadata.total_articles_rejected += 1
             continue
             
-        # 3. Reject missing tags
+                                
         if not tags or len(tags) == 0:
             logger.warning(f"Evaluation Warning: Article '{title}' is missing topic tags. Removing.")
             state.metadata.total_articles_rejected += 1
             continue
             
-        # 4. Reject low-information or overly generic summaries
+                                                               
         if len(summary.split()) < MIN_SUMMARY_WORDS or "will transform the future" in summary.lower():
             logger.warning(f"Evaluation Warning: Article '{title}' has a vague or low-information summary. Removing.")
             state.metadata.total_articles_rejected += 1
@@ -64,13 +64,13 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
             state.metadata.total_articles_rejected += 1
             continue
             
-        # 5. Reject low trend score
+                                   
         if trend_score < MIN_TREND_SCORE:
             logger.warning(f"Evaluation Warning: Article '{title}' has a low trend score ({trend_score}). Removing.")
             state.metadata.total_articles_rejected += 1
             continue
             
-        # 6. Validate summary grounding against title
+                                                     
         import re
         title_words_for_eval = re.findall(r'\b\w+\b', title.lower())
         stop_words = {"a", "an", "the", "in", "on", "at", "to", "for", "of", "and", "or", "with", "is", "are", "was", "were", "it", "this", "that", "by", "as", "from", "be", "how", "what", "why", "new", "about"}
@@ -81,7 +81,7 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
             match_count = sum(1 for kw in keywords if kw in summary_lower)
             overlap_ratio = match_count / len(keywords)
             
-            # If the summary doesn't reference at least some key concepts from the title, reject as hallucination
+                                                                                                                 
             if overlap_ratio < 0.1 and match_count == 0:
                 logger.warning(f"[Evaluator] Rejected hallucinated/misaligned summary for article: '{title}'")
                 state.metadata.total_articles_rejected += 1
@@ -93,7 +93,7 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
         
     state.articles = valid_articles
     
-    # Perform source diversity, quality baseline, and count checks
+                                                                  
     has_tavily = any(a.source == "tavily" for a in valid_articles)
     avg_trend_score = sum(a.trend_score for a in valid_articles) / len(valid_articles) if valid_articles else 0.0
     
@@ -104,7 +104,7 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
     if avg_trend_score < 2.0:
         logger.warning(f"[Evaluator] Warning: Average trend score is below baseline ({round(avg_trend_score, 2)} < 2.0).")
         
-    # Trim down to the exact requested target size, enforcing source diversity
+                                                                              
     if len(valid_articles) > TARGET_FINAL_ARTICLES:
         from collections import defaultdict
         
@@ -118,16 +118,16 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
         if num_sources > 0:
             target_per_source = TARGET_FINAL_ARTICLES // num_sources
             
-            # Extract up to target_per_source from each group
+                                                             
             for source, articles in source_groups.items():
-                # Articles are already sorted by trend_score descending from Ranker
+                                                                                   
                 taken = articles[:target_per_source]
                 final_list.extend(taken)
                 
-                # Remove taken articles from the group
+                                                      
                 source_groups[source] = articles[len(taken):]
                 
-            # Fill remaining slots by merging all unused articles and sorting by score
+                                                                                      
             remaining_slots = TARGET_FINAL_ARTICLES - len(final_list)
             if remaining_slots > 0:
                 unused = []
@@ -137,7 +137,7 @@ def evaluate_newsletter(state: PipelineState) -> PipelineState:
                 unused.sort(key=lambda x: x.trend_score, reverse=True)
                 final_list.extend(unused[:remaining_slots])
                 
-        # Re-sort the final list by trend score
+                                               
         final_list.sort(key=lambda x: x.trend_score, reverse=True)
         valid_articles = final_list
     

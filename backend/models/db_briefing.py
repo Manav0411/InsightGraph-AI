@@ -15,7 +15,7 @@ class Briefing(Base):
     generated_at = Column(DateTime, default=datetime.utcnow)
     execution_time_seconds = Column(Float, default=0.0)
     
-    workflow_health = Column(String, nullable=True) # e.g. 'success', 'recovery_triggered'
+    workflow_health = Column(String, nullable=True)                                       
     grounding_reliability = Column(Float, default=100.0)
     validation_success_rate = Column(Float, default=100.0)
     

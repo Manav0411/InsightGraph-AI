@@ -49,7 +49,7 @@ def save_user_profile(profile: UserProfile):
     
     try:
         with open(profile_path, "w", encoding="utf-8") as f:
-            # model_dump_json serializes Pydantic to a JSON string
+                                                                  
             f.write(profile.model_dump_json(indent=4))
         logger.info(f"Saved user profile for '{profile.user_id}' to {profile_path}")
     except Exception as e:

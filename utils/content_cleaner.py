@@ -11,7 +11,7 @@ def clean_html_noise(text: str) -> str:
     if not text:
         return ""
     
-    # Remove common repetitive boilerplate phrases
+                                                  
     noise_patterns = [
         r"read more.*",
         r"click here to continue.*",
@@ -35,9 +35,9 @@ def normalize_content(text: str) -> str:
     if not text:
         return ""
     
-    # Replace multiple newlines with a single newline
+                                                     
     text = re.sub(r'\n+', '\n', text)
-    # Replace multiple spaces with a single space
+                                                 
     text = re.sub(r' +', ' ', text)
     
     return text.strip()

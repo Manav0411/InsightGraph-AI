@@ -14,7 +14,7 @@ class ValidationResult(BaseModel):
     is_relevant: bool = Field(description="True if the content genuinely supports and matches the title, False if it is clickbait, unrelated, or a hallucinated summary.")
 
 async def _validate_single_article(llm: ChatGroq, article: Article, sem: asyncio.Semaphore) -> Tuple[Article, bool]:
-    # Bypass the elite API sources as they are intrinsically grounded by our direct queries.
+                                                                                            
     if article.source in ["arxiv", "rss"]:
         return article, True
         
@@ -70,10 +70,10 @@ async def validate_articles(state: PipelineState) -> PipelineState:
         logger.warning("No GROQ_API_KEY found, bypassing LLM validation.")
         return state
         
-    # Initialize the fast model with structured output
+                                                      
     llm = ChatGroq(model=FAST_MODEL, temperature=0.0, api_key=api_key).with_structured_output(ValidationResult)
     
-    # Run all validation checks in parallel but severely limit concurrency to 2 to prevent Groq 429 concurrency warnings
+                                                                                                                        
     sem = asyncio.Semaphore(2)
     tasks = [_validate_single_article(llm, article, sem) for article in state.articles]
     results = await asyncio.gather(*tasks)

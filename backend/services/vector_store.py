@@ -30,7 +30,7 @@ class VectorMemoryManager:
                 model=self.model,
             )
             
-            # The result from feature_extraction is a numpy array
+                                                                 
             if hasattr(result, "tolist"):
                 return result.tolist()
             elif isinstance(result, list):

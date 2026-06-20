@@ -26,33 +26,33 @@ class Article(BaseModel):
     title: str
     url: str
 
-    # Original retrieved content
+                                
     content: str
 
-    # Source information
+                        
     source: str
     image_url: Optional[str] = None
 
-    # AI-generated fields
+                         
     summary: Optional[str] = None
     details: List[str] = Field(default_factory=list)
     why_it_matters: Optional[str] = None
 
-    # Classification
+                    
     tags: List[str] = Field(default_factory=list)
 
-    # Ranking
+             
     trend_score: float = 0.0
     personalization_boost: float = 0.0
 
-    # GitHub-specific metadata
+                              
     stars: Optional[int] = None
 
-    # Trust & Explainability
+                            
     recommendation_reasons: List[str] = Field(default_factory=list)
     grounding_verified: bool = False
 
-    # Tracking metadata
+                       
     retrieved_at: datetime = Field(default_factory=datetime.utcnow)
 
 

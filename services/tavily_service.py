@@ -7,7 +7,7 @@ from utils.content_cleaner import clean_html_noise, normalize_content
 
 load_dotenv()
 
-# Pre-defined focused queries targeting concrete AI updates rather than broad prediction blogs
+                                                                                              
 DEFAULT_QUERIES = [
     "latest AI agent developments",
     "latest LLM releases",
@@ -53,7 +53,7 @@ def fetch_ai_news(queries: List[str] = None, max_results: int = 5) -> List[Dict[
             print(f"Retrieved {len(results)} articles and {len(images)} images")
             
             for i, result in enumerate(results):
-                # Fallback to standard content if raw_content is too short or missing
+                                                                                     
                 raw = result.get("raw_content", "")
                 if not raw or len(raw) < 500:
                     raw = result.get("content", "")
@@ -73,7 +73,7 @@ def fetch_ai_news(queries: List[str] = None, max_results: int = 5) -> List[Dict[
         except Exception as e:
             print(f"Error fetching query '{query}' from Tavily: {e}")
             
-        # Rate limit protection for free tier
+                                             
         time.sleep(0.5)
             
     return all_results

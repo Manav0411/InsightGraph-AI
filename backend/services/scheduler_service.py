@@ -49,7 +49,7 @@ def start_scheduler(app):
         id="daily_intelligence_generation",
         name="Generate daily autonomous briefing",
         replace_existing=True,
-        misfire_grace_time=3600, # 1 hour grace period to handle laptop sleep/wake
+        misfire_grace_time=3600,                                                  
     )
     
     scheduler.start()

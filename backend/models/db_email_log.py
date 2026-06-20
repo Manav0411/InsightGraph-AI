@@ -12,7 +12,7 @@ class EmailDeliveryLog(Base):
     briefing_id = Column(String, ForeignKey("briefings.id", ondelete="CASCADE"), nullable=True)
     recipient_email = Column(String, nullable=False)
     
-    status = Column(String, nullable=False)  # "success" or "failed"
+    status = Column(String, nullable=False)                         
     error_message = Column(Text, nullable=True)
     delivered_at = Column(DateTime, default=datetime.utcnow)
     

@@ -28,7 +28,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(
             token,
             signing_key.key,
             algorithms=["RS256"],
-            audience=None, # By default, Next.js Clerk token requests might not set an explicit aud.
+            audience=None,                                                                          
             issuer=issuer
         )
         

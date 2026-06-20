@@ -17,7 +17,7 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
     state.pipeline_stage = "composition"
     logger.info("Composing newsletter...")
     
-    # Sort articles by trend score globally before segmenting
+                                                             
     articles = sorted(state.articles, key=lambda x: x.trend_score, reverse=True)
     
     tavily_articles = [a for a in articles if a.source == "tavily"]
@@ -48,7 +48,7 @@ def compose_newsletter(state: PipelineState) -> PipelineState:
         except Exception as e:
             logger.warning(f"Failed to generate editorial intro: {e}")
         
-    # Recommended For You section (top 3 articles with personalization_boost > 0)
+                                                                                 
     boosted_articles = [a for a in articles if getattr(a, "personalization_boost", 0.0) > 0.0]
     boosted_articles = sorted(boosted_articles, key=lambda x: (x.personalization_boost, x.trend_score), reverse=True)
     recommended_articles = boosted_articles[:3]

@@ -30,7 +30,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
     """
     start_time = time.perf_counter()
     
-    # Detect analyzer self-retry transition
+                                           
     if state.pipeline_stage == "analysis":
         state.analyzer_retry_count += 1
         state.metadata.recovery_attempts += 1
@@ -39,7 +39,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
             f"[Graph] Routing from Analyzer → Analyzer (Retry). "
             f"Retry Count: {state.analyzer_retry_count}/1"
         )
-        # Clear out previous analyzer errors so they don't compound
+                                                                   
         state.errors = [e for e in state.errors if not ("Analysis failed" in e or "analyzer" in e.lower())]
         state.warnings = [w for w in state.warnings if not ("Analysis failed" in w or "analyzer" in w.lower())]
         
@@ -54,7 +54,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         state.errors.append(error_msg)
         return state
     
-    # Initialize the Groq models
+                                
     reasoning_llm = ChatGroq(
         model=REASONING_MODEL,
         temperature=0.0,
@@ -68,7 +68,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         api_key=api_key
     )
     
-    # Set up structured output with include_raw=True to capture token usage metadata
+                                                                                    
     structured_reasoning = reasoning_llm.with_structured_output(ArticleAnalysis, include_raw=True)
     structured_fast = fast_llm.with_structured_output(ArticleAnalysis, include_raw=True)
     
@@ -76,13 +76,13 @@ def analyze_articles(state: PipelineState) -> PipelineState:
     arxiv_chain = arxiv_prompt | structured_reasoning
     community_chain = community_prompt | structured_fast
     
-    # Reset processed count at the start of analysis to prevent double counting on retries
+                                                                                          
     state.metadata.total_articles_processed = 0
     
     total_articles = len(state.articles)
     
     for idx, article in enumerate(state.articles, 1):
-        # Skip if already successfully analyzed in a previous attempt
+                                                                     
         if article.summary and article.summary != "Summary generation failed.":
             logger.info(f"Skipping already-analyzed article {idx}/{total_articles}: {article.title}")
             state.metadata.total_articles_processed += 1
@@ -90,10 +90,10 @@ def analyze_articles(state: PipelineState) -> PipelineState:
             
         logger.info(f"Analyzing article {idx}/{total_articles}: {article.title}")
         
-        # Truncate content to MAX_CONTENT_LENGTH to reduce context noise and prevent topic contamination
+                                                                                                        
         truncated_content = article.content[:MAX_CONTENT_LENGTH]
         
-        # Route to the appropriate processing chain
+                                                   
         if article.source == "arxiv":
             chain = arxiv_chain
         elif article.source == "hacker_news":
@@ -101,7 +101,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         else:
             chain = news_chain
         
-        # 1. Retrieve Historical Context from Vector Memory
+                                                           
         history_results = memory_manager.get_historical_context(article.title, state.user_profile.user_id)
         history_str = "No historical context available."
         
@@ -113,7 +113,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                 history_str += f"- [{date_str}] {h['title']}: {h['content'][:300]}...\n"
         
         try:
-            # Implement auto-retry on rate limit errors
+                                                       
             retries = 0
             analysis_dict = None
             
@@ -124,7 +124,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                         "content": truncated_content,
                         "history": history_str
                     })
-                    break  # Succeeded, break retry loop
+                    break                               
                 except Exception as e:
                     err_msg = str(e)
                     is_rate_limit = "429" in err_msg or "rate_limit" in err_msg or (hasattr(e, "status_code") and e.status_code == 429)
@@ -137,7 +137,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                             logger.warning(f"Rate limit hit. API requested wait: {wait_time}s. Retrying...")
                             time.sleep(wait_time)
                         else:
-                            # TPM or TPD limit hit. Fallback to FAST_MODEL (8B) which has a 5x higher daily limit.
+                                                                                                                  
                             logger.warning(f"Rate limit hit without seconds (likely TPD). Error: {err_msg}. Falling back to FAST_MODEL...")
                             
                             fallback_llm = ChatGroq(
@@ -154,7 +154,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                             else:
                                 chain = news_prompt | structured_fallback_llm
                             
-                            # Immediately retry with the fallback chain
+                                                                       
                             continue
                             
                         retries += 1
@@ -163,7 +163,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                     else:
                         raise e
             
-            # Extract structured response and raw token usage
+                                                             
             analysis = analysis_dict.get("parsed")
             raw_msg = analysis_dict.get("raw")
             
@@ -172,7 +172,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                 state.metadata.total_prompt_tokens += token_usage.get("prompt_tokens", 0)
                 state.metadata.total_completion_tokens += token_usage.get("completion_tokens", 0)
             
-            # Mutate Pydantic article object in-place
+                                                     
             if analysis:
                 article.summary = analysis.summary
                 article.details = analysis.details
@@ -188,13 +188,13 @@ def analyze_articles(state: PipelineState) -> PipelineState:
             if "failed_generation" in err_msg and "<function=ArticleAnalysis>" in err_msg:
                 try:
                     import re, json
-                    # Extract everything after <function=ArticleAnalysis>
+                                                                         
                     match = re.search(r"<function=ArticleAnalysis>\s*(\{.*\})", err_msg, re.DOTALL)
                     if match:
                         json_str = match.group(1)
-                        # Fix Python stringified dict escaping of single quotes (e.g. industry\'s)
+                                                                                                  
                         json_str = json_str.replace("\\'", "'")
-                        # Iteratively trim from the right to strip extra error repr characters
+                                                                                              
                         for i in range(len(json_str), 0, -1):
                             try:
                                 parsed = json.loads(json_str[:i], strict=False)
@@ -213,14 +213,14 @@ def analyze_articles(state: PipelineState) -> PipelineState:
             
             if not salvaged:
                 logger.warning(f"Error analyzing article '{article.title}' (Hallucinated schema): {e}")
-                # Intentionally avoiding appending to state.errors to bypass Graph-level failures
-                # The evaluator will simply drop this article if it's missing tags/details
+                                                                                                 
+                                                                                          
                 article.summary = "Summary generation failed."
                 article.details = []
                 article.why_it_matters = "Analysis failed."
                 article.tags = []
             
-        # Throttling sleep between articles
+                                           
         if idx < total_articles:
             time.sleep(ANALYSIS_THROTTLE_SECONDS)
             

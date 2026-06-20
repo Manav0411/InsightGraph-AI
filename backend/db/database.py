@@ -14,7 +14,7 @@ if not DATABASE_URL:
 try:
     engine = create_engine(
         DATABASE_URL,
-        pool_pre_ping=True,  # Ensures disconnected connections are not used
+        pool_pre_ping=True,                                                 
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     logger.info("PostgreSQL engine initialized successfully.")

@@ -18,10 +18,10 @@ def extract_og_image(url: str, default_image: str = FALLBACK_IMAGE) -> str:
         req = urllib.request.Request(url, headers={'User-Agent': 'InsightGraph/1.0'})
         with urllib.request.urlopen(req, timeout=3) as response:
             html = response.read().decode('utf-8', errors='ignore')
-            # Look for <meta property="og:image" content="...">
+                                                               
             match = re.search(r'<meta property="og:image"\s+content="([^"]+)"', html, re.IGNORECASE)
             if not match:
-                # Also try <meta name="og:image" content="...">
+                                                               
                 match = re.search(r'<meta name="og:image"\s+content="([^"]+)"', html, re.IGNORECASE)
                 
             if match:

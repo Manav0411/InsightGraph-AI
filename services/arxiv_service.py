@@ -20,7 +20,7 @@ def fetch_arxiv_papers(topics: List[str] = None, max_results: int = 10) -> List[
     all_results = []
     
     if topics:
-        # Build search query from topics. ArXiv uses 'all:keyword'
+                                                                  
         search_query = " OR ".join([f'all:"{urllib.parse.quote(t)}"' for t in topics])
     else:
         search_query = " OR ".join(DEFAULT_ARXIV_QUERIES)

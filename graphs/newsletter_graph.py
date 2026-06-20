@@ -37,7 +37,7 @@ def route_after_evaluation(state: PipelineState) -> str:
     )
     
     if needs_recovery:
-        if state.retry_count < 0: # Disabled retries to avoid 5-minute timeout
+        if state.retry_count < 0:                                             
             logger.info(f"[Graph] Quality/Diversity check failed. Routing from Evaluator → Retriever (Retry {state.retry_count + 1}/{state.max_retries}).")
             return "retriever"
         else:
@@ -60,15 +60,15 @@ def create_newsletter_graph():
     workflow.add_node("evaluator", evaluate_newsletter)
     workflow.add_node("composer", compose_newsletter)
 
-    # Set the entry point
+                         
     workflow.set_entry_point("retriever")
 
-    # Define linear flow
+                        
     workflow.add_edge("retriever", "validator")
     workflow.add_edge("validator", "ranker")
     workflow.add_edge("ranker", "analyzer")
     
-    # Conditional routing after analyzer
+                                        
     workflow.add_conditional_edges(
         "analyzer",
         route_after_analysis,
@@ -78,7 +78,7 @@ def create_newsletter_graph():
         }
     )
     
-    # Conditional routing after evaluator
+                                         
     workflow.add_conditional_edges(
         "evaluator",
         route_after_evaluation,

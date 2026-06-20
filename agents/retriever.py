@@ -20,7 +20,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     """
     start_time = time.perf_counter()
     
-    # Detect recovery route transition from Evaluator
+                                                     
     if state.pipeline_stage == "evaluation":
         state.retry_count += 1
         state.metadata.recovery_attempts += 1
@@ -38,7 +38,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     else:
         logger.info("Starting article retrieval...")
         
-    # Scale max results dynamically to fetch deeper when retrying
+                                                                 
     tavily_max = 5 + recovery_attempts * 3
     arxiv_max = ARXIV_MAX_RESULTS + recovery_attempts * 2
     hn_max = 5 + recovery_attempts * 3
@@ -46,10 +46,10 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     
     all_articles_raw = []
     
-    # Use the user's preferred topics if defined
+                                                
     user_topics = state.user_profile.preferences.preferred_topics if state.user_profile.preferences.preferred_topics else None
 
-    # 1. Fetch from Tavily Service
+                                  
     try:
         tavily_articles = fetch_ai_news(queries=user_topics, max_results=tavily_max)
         all_articles_raw.extend(tavily_articles)
@@ -59,7 +59,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
         logger.error(f"Error retrieving from Tavily service: {e}")
         state.errors.append(f"Tavily retrieval failed: {e}")
         
-    # 2. Fetch from ArXiv
+                         
     try:
         arxiv_articles = fetch_arxiv_papers(topics=user_topics, max_results=arxiv_max)
         all_articles_raw.extend(arxiv_articles)
@@ -68,7 +68,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     except Exception as e:
         logger.error(f"Error retrieving from ArXiv: {e}")
         
-    # 3. Fetch from Hacker News
+                               
     try:
         hn_articles = fetch_hacker_news(topics=user_topics, max_results=hn_max)
         all_articles_raw.extend(hn_articles)
@@ -77,7 +77,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     except Exception as e:
         logger.error(f"Error retrieving from Hacker News: {e}")
         
-    # 4. Fetch from RSS Feeds
+                             
     try:
         rss_articles = fetch_rss_feeds(max_per_feed=rss_max)
         all_articles_raw.extend(rss_articles)
@@ -86,7 +86,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
     except Exception as e:
         logger.error(f"Error retrieving from RSS: {e}")
         
-    # Deduplicate raw fetched articles against themselves based on title.lower()
+                                                                                
     deduplicated_raw = []
     seen_titles = set()
     
@@ -94,7 +94,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
         title = raw.get("title", "")
         title_lower = title.strip().lower()
         
-        # Skip articles with empty titles
+                                         
         if not title_lower:
             continue
             
@@ -102,7 +102,7 @@ def retrieve_articles(state: PipelineState) -> PipelineState:
             seen_titles.add(title_lower)
             deduplicated_raw.append(raw)
             
-    # Deduplicate and append to state.articles (avoiding overwriting previously accepted articles)
+                                                                                                  
     existing_titles = {a.title.strip().lower() for a in state.articles}
     new_articles_count = 0
     
