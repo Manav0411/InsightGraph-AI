@@ -207,7 +207,8 @@ async def generate_newsletter_stream(request: NewsletterRequest, db: Session = D
         yield f"data: {{\"stage\": \"Finalizing\", \"status\": \"started\"}}\n\n"
         
         try:
-            response = await run_newsletter_workflow(request, db)
+            user_profile = get_user_profile_pydantic(db, user_id)
+            response = await run_newsletter_workflow(request, user_profile)
             
             save_briefing(db, user_id, response)
             
@@ -227,7 +228,8 @@ async def generate_autonomous(user_id: str, db: Session = Depends(get_db)):
     """
     try:
         request = NewsletterRequest(user_id=user_id)
-        response = await run_newsletter_workflow(request, db)
+        user_profile = get_user_profile_pydantic(db, user_id)
+        response = await run_newsletter_workflow(request, user_profile)
         save_briefing(db, user_id, response)
         return response
     except Exception as e:

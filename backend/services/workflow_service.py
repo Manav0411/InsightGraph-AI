@@ -130,7 +130,8 @@ async def generate_autonomous_briefing(user_id: str):
         from backend.services.email_service import send_briefing_email
         
         request = NewsletterRequest(user_id=user_id)
-        response = await run_newsletter_workflow(request, db)
+        user_profile = get_user_profile_pydantic(db, user_id)
+        response = await run_newsletter_workflow(request, user_profile)
         db_briefing = save_briefing(db, user_id, response)
         
         try:
