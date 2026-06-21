@@ -55,7 +55,7 @@ async def get_generation_status(task_id: str, user_id: str = Depends(get_current
     return status
 
 @router.post("/generate", response_model=NewsletterResponse)
-async def generate_newsletter(request: NewsletterRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+async def generate_newsletter(request: NewsletterRequest, user_id: str = Depends(get_current_user)):
     """
     Triggers the LangGraph orchestration to generate a personalized newsletter.
     This is a long-running synchronous task.
@@ -63,10 +63,13 @@ async def generate_newsletter(request: NewsletterRequest, db: Session = Depends(
     try:
         request.user_id = user_id
         
-        user_profile = get_user_profile_pydantic(db, user_id)
+        with SessionLocal() as db:
+            user_profile = get_user_profile_pydantic(db, user_id)
         
         response = await run_newsletter_workflow(request, user_profile)
-        save_briefing(db, user_id, response)
+        
+        with SessionLocal() as db:
+            save_briefing(db, user_id, response)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
@@ -183,7 +186,7 @@ async def export_briefing(briefing_id: str, db: Session = Depends(get_db), user_
     return PlainTextResponse(md, media_type="text/markdown", headers={"Content-Disposition": f"attachment; filename=InsightGraph_{briefing_id}.md"})
 
 @router.post("/generate-stream")
-async def generate_newsletter_stream(request: NewsletterRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
+async def generate_newsletter_stream(request: NewsletterRequest, user_id: str = Depends(get_current_user)):
     """
     Simulates a live workflow execution panel by streaming progress updates via SSE,
     followed by the actual generation.
@@ -207,10 +210,13 @@ async def generate_newsletter_stream(request: NewsletterRequest, db: Session = D
         yield f"data: {{\"stage\": \"Finalizing\", \"status\": \"started\"}}\n\n"
         
         try:
-            user_profile = get_user_profile_pydantic(db, user_id)
+            with SessionLocal() as db:
+                user_profile = get_user_profile_pydantic(db, user_id)
+                
             response = await run_newsletter_workflow(request, user_profile)
             
-            save_briefing(db, user_id, response)
+            with SessionLocal() as db:
+                save_briefing(db, user_id, response)
             
             yield f"data: {{\"stage\": \"Done\", \"status\": \"completed\", \"result\": \"success\"}}\n\n"
         except Exception as e:
@@ -220,7 +226,7 @@ async def generate_newsletter_stream(request: NewsletterRequest, db: Session = D
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.post("/generate-autonomous/{user_id}", response_model=NewsletterResponse)
-async def generate_autonomous(user_id: str, db: Session = Depends(get_db)):
+async def generate_autonomous(user_id: str):
     """
     Simulates a background cron trigger. 
     Accepts ZERO preferences in the payload, purely DB-driven orchestration.
@@ -228,9 +234,14 @@ async def generate_autonomous(user_id: str, db: Session = Depends(get_db)):
     """
     try:
         request = NewsletterRequest(user_id=user_id)
-        user_profile = get_user_profile_pydantic(db, user_id)
+        
+        with SessionLocal() as db:
+            user_profile = get_user_profile_pydantic(db, user_id)
+            
         response = await run_newsletter_workflow(request, user_profile)
-        save_briefing(db, user_id, response)
+        
+        with SessionLocal() as db:
+            save_briefing(db, user_id, response)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Autonomous workflow execution failed: {str(e)}")

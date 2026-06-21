@@ -124,30 +124,28 @@ async def generate_autonomous_briefing(user_id: str):
     from backend.services.persistence_service import save_briefing
     
     logger.info(f"[scheduler] Initiating autonomous briefing generation for user: {user_id}")
-    db = SessionLocal()
     try:
         from backend.models.db_user import User
         from backend.services.email_service import send_briefing_email
         
         request = NewsletterRequest(user_id=user_id)
-        user_profile = get_user_profile_pydantic(db, user_id)
-        response = await run_newsletter_workflow(request, user_profile)
-        db_briefing = save_briefing(db, user_id, response)
         
-        try:
+        with SessionLocal() as db:
+            user_profile = get_user_profile_pydantic(db, user_id)
+            
+        response = await run_newsletter_workflow(request, user_profile)
+        
+        with SessionLocal() as db:
+            db_briefing = save_briefing(db, user_id, response)
             user = db.query(User).filter(User.id == user_id).first()
             if user and db_briefing:
                 if user.preferences and getattr(user.preferences, 'email_delivery_enabled', True):
                     await send_briefing_email(db, user, db_briefing)
                 else:
                     logger.info(f"[scheduler] Email delivery disabled for user {user_id}. Skipping email.")
-        except Exception as email_err:
-            logger.error(f"[scheduler] Email delivery failed but orchestration succeeded for {user_id}: {email_err}")
 
         logger.info(f"[scheduler] Successfully completed autonomous generation for {user_id}")
         return response
     except Exception as e:
         logger.error(f"[scheduler] Autonomous workflow failed for user {user_id}: {str(e)}")
         raise
-    finally:
-        db.close()
