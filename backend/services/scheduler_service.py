@@ -13,12 +13,15 @@ async def daily_intelligence_generation():
     Scheduled job that orchestrates intelligence generation for all users.
     """
     logger.info("[scheduler] Starting scheduled daily intelligence generation.")
-    db = SessionLocal()
-    try:
+    
+    users = []
+    with SessionLocal() as db:
         users = db.query(User).all()
-        if not users:
-            logger.warning("[scheduler] No users found for daily generation.")
         
+    if not users:
+        logger.warning("[scheduler] No users found for daily generation.")
+    
+    try:
         for user in users:
             try:
                 await generate_autonomous_briefing(user.id)
@@ -28,8 +31,6 @@ async def daily_intelligence_generation():
         logger.info("[scheduler] Completed scheduled daily intelligence generation.")
     except Exception as e:
         logger.error(f"[scheduler] Fatal error in daily generation job: {e}")
-    finally:
-        db.close()
 
 def start_scheduler(app):
     """
