@@ -19,7 +19,7 @@ export default async function RootLayout({ children }) {
   const user = await currentUser();
   const email = user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() || "";
   const adminEmails = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : [];
-  const isAdmin = user && (adminEmails.length === 0 || adminEmails.includes(email));
+  const isAdmin = user && adminEmails.includes(email);
   
   return (
     <html lang="en" suppressHydrationWarning>

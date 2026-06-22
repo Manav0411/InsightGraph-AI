@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }) {
   const email = user.emailAddresses?.[0]?.emailAddress?.toLowerCase() || "";
   const adminEmails = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : [];
   
-  const isAdmin = adminEmails.length === 0 || adminEmails.includes(email);
+  const isAdmin = adminEmails.includes(email);
 
   if (!isAdmin) {
     redirect('/');
