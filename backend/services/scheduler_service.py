@@ -14,19 +14,24 @@ async def daily_intelligence_generation():
     """
     logger.info("[scheduler] Starting scheduled daily intelligence generation.")
     
-    users = []
+    user_ids_to_process = []
     with SessionLocal() as db:
         users = db.query(User).all()
+        for u in users:
+            # Default to True if preferences are missing
+            if not u.preferences or getattr(u.preferences, 'email_delivery_enabled', True):
+                user_ids_to_process.append(u.id)
         
-    if not users:
-        logger.warning("[scheduler] No users found for daily generation.")
+    if not user_ids_to_process:
+        logger.warning("[scheduler] No users found with email delivery enabled for daily generation.")
+        return
     
     try:
-        for user in users:
+        for user_id in user_ids_to_process:
             try:
-                await generate_autonomous_briefing(user.id)
+                await generate_autonomous_briefing(user_id)
             except Exception as e:
-                logger.error(f"[scheduler] Failed autonomous generation for user {user.id}: {e}")
+                logger.error(f"[scheduler] Failed autonomous generation for user {user_id}: {e}")
                 
         logger.info("[scheduler] Completed scheduled daily intelligence generation.")
     except Exception as e:
