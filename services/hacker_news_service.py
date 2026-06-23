@@ -45,10 +45,10 @@ def fetch_hacker_news(topics: List[str] = None, max_results: int = 5) -> List[Di
                                                             
     query = "AI"
     encoded_query = urllib.parse.quote(query)
-    url = f"http://hn.algolia.com/api/v1/search?query={encoded_query}&tags=story&numericFilters=points>50&hitsPerPage=30"
+    url = f"https://hn.algolia.com/api/v1/search?query={encoded_query}&tags=story&hitsPerPage=50"
     
     try:
-        logger.info(f"Fetching broad batch of 30 Hacker News AI stories for local filtering...")
+        logger.info(f"Fetching broad batch of 50 Hacker News AI stories for local filtering...")
         req = urllib.request.Request(url, headers={'User-Agent': 'InsightGraph/1.0'})
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode('utf-8'))
@@ -56,16 +56,16 @@ def fetch_hacker_news(topics: List[str] = None, max_results: int = 5) -> List[Di
         raw_hits = data.get('hits', [])
         filtered_hits = []
         
-                                                         
         if topics and len(topics) > 0:
             lowercase_topics = [t.lower() for t in topics]
             for hit in raw_hits:
-                text_to_search = (hit.get('title', '') + " " + hit.get('story_text', '')).lower()
-                                                              
+                if (hit.get('points') or 0) < 40:
+                    continue
+                text_to_search = (hit.get('title', '') + " " + (hit.get('story_text') or '')).lower()
                 if any(topic in text_to_search for topic in lowercase_topics):
                     filtered_hits.append(hit)
         else:
-            filtered_hits = raw_hits
+            filtered_hits = [hit for hit in raw_hits if (hit.get('points') or 0) >= 40]
             
                                                   
         final_hits = filtered_hits[:max_results]
