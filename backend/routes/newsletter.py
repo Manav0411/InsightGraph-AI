@@ -94,16 +94,38 @@ async def generate_newsletter(request: NewsletterRequest, user_id: str = Depends
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
 
-@router.get("/latest", response_model=NewsletterResponse)
+@router.get("/latest")
 async def get_latest_newsletter(db: Session = Depends(get_db), user_id: str = Depends(get_current_user)):
     """
-    Returns the most recently generated newsletter from the runtime store.
-    Currently falls back to JSON cache.
+    Returns the most recently generated newsletter from the PostgreSQL database.
     """
-    data = load_last_newsletter()
-    if not data:
+    from backend.services.persistence_service import fetch_latest_briefing
+    briefing = fetch_latest_briefing(db, user_id)
+    if not briefing:
         raise HTTPException(status_code=404, detail="No newsletters have been generated yet.")
-    return data
+        
+    articles_data = []
+    for a in briefing.articles:
+        articles_data.append({
+            "title": a.title,
+            "url": a.url,
+            "image_url": a.image_url,
+            "summary": a.summary,
+            "details": a.details,
+            "why_it_matters": a.why_it_matters,
+            "source": a.source,
+            "tags": a.tags,
+            "trend_score": a.trend_score,
+            "recommendation_reasons": [a.recommendation_reason] if a.recommendation_reason else [],
+            "grounding_verified": a.is_grounded
+        })
+        
+    return {
+        "briefing": {
+            "title": briefing.title
+        },
+        "articles": articles_data
+    }
 
 @router.get("/history")
 async def get_newsletter_history(user_id: str = Depends(get_current_user), db: Session = Depends(get_db)):
