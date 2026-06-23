@@ -11,6 +11,22 @@ from backend.services.persistence_service import save_briefing, fetch_latest_bri
 from backend.dependencies.auth import get_current_user
 from utils.runtime_store import load_last_newsletter
 from backend.services.task_manager import create_task, get_task_status, mark_task_completed, mark_task_failed
+import os
+
+def verify_generation_access(db: Session, user_id: str):
+    from backend.models.db_user import User
+    from backend.models.db_briefing import Briefing
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    admin_emails = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
+    is_admin = user.email and user.email.lower() in admin_emails
+    
+    if not is_admin:
+        briefing_count = db.query(Briefing).filter(Briefing.user_id == user_id).count()
+        if briefing_count >= 1:
+            raise HTTPException(status_code=403, detail="Non-admin users can only manually generate their first onboarding briefing. Further briefings are scheduled automatically.")
 
 router = APIRouter(prefix="/newsletter", tags=["Newsletter"])
 
@@ -40,6 +56,9 @@ async def generate_newsletter_async(background_tasks: BackgroundTasks, request: 
     Spawns a background task to generate the newsletter. 
     Returns immediately with a task_id that the frontend can poll.
     """
+    with SessionLocal() as db:
+        verify_generation_access(db, user_id)
+        
     task_id = create_task()
     background_tasks.add_task(background_generation_task, request, user_id, task_id)
     return {"task_id": task_id, "status": "accepted"}
@@ -64,6 +83,7 @@ async def generate_newsletter(request: NewsletterRequest, user_id: str = Depends
         request.user_id = user_id
         
         with SessionLocal() as db:
+            verify_generation_access(db, user_id)
             user_profile = get_user_profile_pydantic(db, user_id)
         
         response = await run_newsletter_workflow(request, user_profile)
@@ -211,6 +231,7 @@ async def generate_newsletter_stream(request: NewsletterRequest, user_id: str = 
         
         try:
             with SessionLocal() as db:
+                verify_generation_access(db, user_id)
                 user_profile = get_user_profile_pydantic(db, user_id)
                 
             response = await run_newsletter_workflow(request, user_profile)

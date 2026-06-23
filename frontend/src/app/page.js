@@ -12,6 +12,9 @@ export default function IntelligenceReader() {
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState(null);
 
+  const isAdmin = user?.primaryEmailAddress?.emailAddress && 
+    (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).includes(user.primaryEmailAddress.emailAddress.toLowerCase());
+
   const [activeTask, setActiveTask] = useState(null);
 
   const fetchLatest = async () => {
@@ -133,15 +136,17 @@ export default function IntelligenceReader() {
       <div className="w-full max-w-[1200px] mx-auto px-5 md:px-8 flex flex-col gap-16 relative pb-24">
         
         <header className="flex flex-col items-center text-center border-b border-outline-variant/30 pb-10 pt-4 relative">
-          <div className="absolute top-0 right-0">
-            <button 
-              onClick={handleRefresh}
-              className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-variant/30 group"
-              title="Refresh Feed"
-            >
-              <span className="material-symbols-outlined text-[20px] group-hover:rotate-180 transition-transform duration-500">refresh</span>
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="absolute top-0 right-0">
+              <button 
+                onClick={handleRefresh}
+                className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-variant/30 group"
+                title="Refresh Feed"
+              >
+                <span className="material-symbols-outlined text-[20px] group-hover:rotate-180 transition-transform duration-500">refresh</span>
+              </button>
+            </div>
+          )}
           <div className="px-4 py-1.5 bg-surface-variant/40 rounded-lg text-[11px] font-bold text-primary uppercase tracking-widest mb-6">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </div>
