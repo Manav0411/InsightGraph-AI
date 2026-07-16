@@ -46,7 +46,7 @@ export default async function RootLayout({ children }) {
                 {userId ? (
                   <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-lg" } }} />
                 ) : (
-                  <SignInButton mode="modal" signUpForceRedirectUrl="/onboarding" fallbackRedirectUrl="/mission-control">
+                  <SignInButton mode="modal" signUpForceRedirectUrl="/onboarding" fallbackRedirectUrl="/">
                     <button className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
                       <span className="material-symbols-outlined" data-icon="account_circle">account_circle</span>
                     </button>

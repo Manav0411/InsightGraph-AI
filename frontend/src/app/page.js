@@ -26,6 +26,8 @@ export default function IntelligenceReader() {
       if (resLatest.ok) {
         const json = await resLatest.json();
         setData(json);
+      } else if (resLatest.status === 404) {
+        router.replace('/onboarding');
       }
     } catch (e) {
       console.error("Failed to fetch data:", e);
