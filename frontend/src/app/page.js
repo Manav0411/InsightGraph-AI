@@ -27,7 +27,9 @@ export default function IntelligenceReader() {
         const json = await resLatest.json();
         setData(json);
       } else if (resLatest.status === 404) {
-        router.replace('/onboarding');
+        if (!localStorage.getItem('active_task_id')) {
+          router.replace('/onboarding');
+        }
       }
     } catch (e) {
       console.error("Failed to fetch data:", e);
