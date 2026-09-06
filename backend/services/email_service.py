@@ -15,6 +15,27 @@ resend.api_key = os.environ.get("RESEND_API_KEY", "")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://www.insightgraph.dev").rstrip("/")
 
 
+def send_admin_alert(subject: str, body: str) -> None:
+    """
+    Fire-and-forget operational alert to every address in ADMIN_EMAILS.
+    Never raises - alerting must not break the caller.
+    """
+    admins = [e.strip() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()]
+    if not admins or not os.environ.get("RESEND_API_KEY"):
+        logger.warning(f"[alert] {subject} (no ADMIN_EMAILS / RESEND_API_KEY configured)")
+        return
+    try:
+        resend.Emails.send({
+            "from": "InsightGraph Ops <intelligence@insightgraph.dev>",
+            "to": admins,
+            "subject": f"[InsightGraph] {subject}",
+            "text": body,
+        })
+        logger.info(f"[alert] Sent admin alert: {subject}")
+    except Exception as e:
+        logger.error(f"[alert] Failed to send admin alert '{subject}': {e}")
+
+
 def render_header(briefing: Briefing) -> str:
     date_str = briefing.generated_at.strftime("%B %d, %Y")
     sqi = round(briefing.signal_quality_index, 1)
