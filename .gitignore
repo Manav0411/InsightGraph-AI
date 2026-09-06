@@ -39,3 +39,5 @@ frontend/.env*.local
 .idea/
 
 backend/.chroma_db/
+# runtime task state
+backend/.tasks.json

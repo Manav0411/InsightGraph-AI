@@ -12,6 +12,8 @@ logger = get_logger("email_service")
 
 resend.api_key = os.environ.get("RESEND_API_KEY", "")
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://www.insightgraph.dev").rstrip("/")
+
 
 def render_header(briefing: Briefing) -> str:
     date_str = briefing.generated_at.strftime("%B %d, %Y")
@@ -79,7 +81,7 @@ def render_footer(briefing: Briefing) -> str:
     val_success = round(briefing.validation_success_rate, 1)
     return f"""
     <div style="margin-top: 48px; padding-top: 32px; border-top: 1px solid #E5E7EB; text-align: center;">
-        <a href="http://localhost:3000/mission-control" style="display: inline-block; background-color: #111827; color: #FFFFFF; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 600; margin-bottom: 24px;">
+        <a href="{FRONTEND_URL}/" style="display: inline-block; background-color: #111827; color: #FFFFFF; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 600; margin-bottom: 24px;">
             Open Observatory
         </a>
         

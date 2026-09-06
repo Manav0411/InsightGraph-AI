@@ -45,7 +45,12 @@ async def run_newsletter_workflow(request: NewsletterRequest, user_profile, task
     
     state_obj = PipelineState(**final_state)
     metadata = state_obj.metadata
-    
+
+    if not state_obj.articles:
+        error_detail = "; ".join(state_obj.errors) if state_obj.errors else "unknown cause"
+        logger.error(f"[API] Pipeline for user {user_id} produced 0 valid articles ({error_detail}). Not persisting an empty briefing.")
+        raise RuntimeError(f"Pipeline produced no valid articles ({error_detail})")
+
     metrics = {
         "recovery_attempts": metadata.recovery_attempts,
         "conditional_routes_triggered": metadata.conditional_routes_triggered,

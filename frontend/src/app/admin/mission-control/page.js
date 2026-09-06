@@ -160,11 +160,16 @@ export default function CommandCenter() {
 
   if (loading) return <div className="p-8 font-body text-on-surface-variant flex items-center justify-center min-h-[50vh]"><div className="animate-pulse">Initializing Telemetry...</div></div>;
 
-  const trustMetrics = data?.trust_metrics || { grounding_reliability_pct: 94.8, validation_success_rate: 90.0 };
-  const avgSqi = data?.metrics?.avg_sqi ? (data.metrics.avg_sqi * 10).toFixed(1) : '95.0';
-  const totalArticles = data?.articles?.length || 10;
-  const scrapedArticles = totalArticles * 3;
-  const hallucinationsCaught = scrapedArticles - totalArticles - Math.floor(scrapedArticles * 0.1); // Fake number based on output
+  // Real telemetry derived from the most recent persisted briefing (/newsletter/history).
+  const latestBriefing = history?.[0] || null;
+  const grounding = latestBriefing?.grounding_reliability ?? null;
+  const sqiScore = latestBriefing?.signal_quality_index ?? null;
+  const signalsDelivered = latestBriefing?.total_articles ?? (data?.articles?.length ?? 0);
+  const execTime = latestBriefing?.execution_time_seconds ?? null;
+  const lastRunAt = latestBriefing?.generated_at
+    ? new Date(latestBriefing.generated_at.endsWith('Z') ? latestBriefing.generated_at : latestBriefing.generated_at + 'Z')
+    : null;
+  const fmt = (v, digits = 1) => (v === null || v === undefined ? '—' : Number(v).toFixed(digits));
 
   return (
     <div className="flex flex-col items-center max-w-5xl mx-auto w-full gap-10 pb-20">
@@ -204,8 +209,8 @@ export default function CommandCenter() {
             Advanced Telemetry
           </h2>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-on-surface-variant bg-surface-variant/50 px-3 py-1.5 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            Live
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            {lastRunAt ? `Last run ${lastRunAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No runs yet'}
           </div>
         </div>
 
@@ -213,28 +218,30 @@ export default function CommandCenter() {
           
           <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-primary/30 transition-colors">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full blur-2xl"></div>
-            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Evaluator Resilience</h3>
-            <p className="text-[10px] text-on-surface-variant/70 mb-6">System Health Metrics</p>
+            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Grounding Reliability</h3>
+            <p className="text-[10px] text-on-surface-variant/70 mb-6">Latest Briefing</p>
             <div className="flex-1 flex flex-col justify-center items-center">
               <div className="relative flex items-center justify-center w-28 h-28 mb-2">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-surface-variant"></circle>
-                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-primary" strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * trustMetrics.grounding_reliability_pct) / 100}></circle>
+                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-primary" strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * (grounding ?? 0)) / 100}></circle>
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center">
-                  <span className="font-headline text-2xl font-bold text-on-surface">{trustMetrics.grounding_reliability_pct.toFixed(1)}%</span>
+                  <span className="font-headline text-2xl font-bold text-on-surface">{fmt(grounding)}%</span>
                 </div>
               </div>
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">Stable</span>
+              <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                {grounding === null ? 'No Data' : grounding >= 90 ? 'Stable' : 'Degraded'}
+              </span>
             </div>
           </div>
 
           <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-primary/30 transition-colors">
             <div className="absolute top-0 right-0 w-24 h-24 bg-tertiary/10 rounded-bl-full blur-2xl"></div>
-            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Articles Scraped</h3>
-            <p className="text-[10px] text-on-surface-variant/70 mb-6">Pipeline Intake</p>
+            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Signals Delivered</h3>
+            <p className="text-[10px] text-on-surface-variant/70 mb-6">Latest Briefing</p>
             <div className="flex-1 flex flex-col justify-between">
-              <div className="text-5xl font-headline font-bold text-on-surface">{scrapedArticles}</div>
+              <div className="text-5xl font-headline font-bold text-on-surface">{signalsDelivered}</div>
               <div className="mt-4 flex items-end gap-2 h-12">
                 <div className="w-full bg-tertiary/40 rounded-t-sm h-[60%]"></div>
                 <div className="w-full bg-tertiary/60 rounded-t-sm h-[80%]"></div>
@@ -245,12 +252,12 @@ export default function CommandCenter() {
 
           <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-error/30 transition-colors">
             <div className="absolute top-0 right-0 w-24 h-24 bg-error/10 rounded-bl-full blur-2xl"></div>
-            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Anomalies Caught</h3>
-            <p className="text-[10px] text-on-surface-variant/70 mb-6">Evaluator Rejections</p>
+            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Execution Time</h3>
+            <p className="text-[10px] text-on-surface-variant/70 mb-6">Latest Pipeline Run</p>
             <div className="flex-1 flex flex-col justify-between">
               <div className="flex items-center gap-3">
-                <div className="text-5xl font-headline font-bold text-on-surface">{hallucinationsCaught}</div>
-                <span className="material-symbols-outlined text-error bg-error/10 p-1.5 rounded-lg text-[20px]">warning</span>
+                <div className="text-5xl font-headline font-bold text-on-surface">{execTime === null ? '—' : `${execTime.toFixed(0)}s`}</div>
+                <span className="material-symbols-outlined text-tertiary bg-tertiary/10 p-1.5 rounded-lg text-[20px]">timer</span>
               </div>
               <div className="mt-4 w-full h-12 flex items-center">
                 <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 30">
@@ -263,11 +270,12 @@ export default function CommandCenter() {
           <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-primary/30 transition-colors">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full blur-2xl"></div>
             <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">SQI Score</h3>
-            <p className="text-[10px] text-on-surface-variant/70 mb-6">System Quality Index</p>
+            <p className="text-[10px] text-on-surface-variant/70 mb-6">Signal Quality Index</p>
             <div className="flex-1 flex flex-col justify-between">
-              <div className="text-5xl font-headline font-bold text-on-surface">{avgSqi}%</div>
+              <div className="text-5xl font-headline font-bold text-on-surface">{fmt(sqiScore)}</div>
               <div className="mt-4 text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">check_circle</span> Excellent
+                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                {sqiScore === null ? 'No Data' : sqiScore >= 60 ? 'Healthy' : sqiScore >= 45 ? 'Fair' : 'Low'}
               </div>
             </div>
           </div>
