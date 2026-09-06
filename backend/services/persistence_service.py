@@ -103,9 +103,12 @@ def save_briefing(db: Session, user_id: str, response: NewsletterResponse) -> Br
     grounding = trust_metrics.get("grounding_reliability_pct", 100.0)
     validation = trust_metrics.get("validation_success_rate", 100.0)
     avg_trend = sum(a.trend_score for a in response.articles) / max(len(response.articles), 1)
-    
+
     normalized_trend = min(avg_trend * 5, 100.0)
-    sqi = round((grounding * 0.4) + (validation * 0.3) + (normalized_trend * 0.3), 1)
+    if not response.articles:
+        sqi = 0.0
+    else:
+        sqi = round((grounding * 0.4) + (validation * 0.3) + (normalized_trend * 0.3), 1)
 
     if dominant_topics:
         top_two = dominant_topics[:2]
@@ -169,7 +172,12 @@ def save_briefing(db: Session, user_id: str, response: NewsletterResponse) -> Br
     return db_briefing
 
 def fetch_latest_briefing(db: Session, user_id: str):
-    return db.query(Briefing).filter(Briefing.user_id == user_id).order_by(desc(Briefing.created_at)).first()
+    return (
+        db.query(Briefing)
+        .filter(Briefing.user_id == user_id, Briefing.total_articles > 0)
+        .order_by(desc(Briefing.created_at))
+        .first()
+    )
 
 def fetch_briefing_history_filtered(db: Session, user_id: str, limit: int = 50):
     return db.query(Briefing).filter(Briefing.user_id == user_id).order_by(desc(Briefing.created_at)).limit(limit).all()

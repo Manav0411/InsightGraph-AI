@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '../../context/UserContext';
 import { API_BASE_URL } from '../../lib/config';
@@ -28,6 +28,38 @@ export default function Onboarding() {
   const router = useRouter();
   const [selectedTopics, setSelectedTopics] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let cancelled = false;
+    const guardAlreadyOnboarded = async () => {
+      if (localStorage.getItem('active_task_id')) {
+        router.replace('/');
+        return;
+      }
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_BASE_URL}/newsletter/history`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const history = await res.json();
+          if (!cancelled && Array.isArray(history) && history.length > 0) {
+            router.replace('/');
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Onboarding guard check failed:', e);
+      }
+      if (!cancelled) setChecking(false);
+    };
+
+    guardAlreadyOnboarded();
+    return () => { cancelled = true; };
+  }, [user?.id, getToken, router]);
 
   const toggleTopic = (topic) => {
     if (selectedTopics.includes(topic)) {
@@ -72,6 +104,14 @@ export default function Onboarding() {
       setIsSaving(false);
     }
   };
+
+  if (checking) {
+    return (
+      <div className="flex justify-center items-center h-[60vh]">
+        <div className="w-10 h-10 border-4 border-outline-variant/30 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] max-w-2xl mx-auto py-12 px-6">

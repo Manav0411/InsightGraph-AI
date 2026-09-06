@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Header
 import asyncio
 import json
 from fastapi.responses import StreamingResponse
@@ -269,12 +269,17 @@ async def generate_newsletter_stream(request: NewsletterRequest, user_id: str = 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.post("/generate-autonomous/{user_id}", response_model=NewsletterResponse)
-async def generate_autonomous(user_id: str):
+async def generate_autonomous(user_id: str, x_cron_secret: str = Header(None)):
     """
-    Simulates a background cron trigger. 
-    Accepts ZERO preferences in the payload, purely DB-driven orchestration.
-    (Kept unauthenticated because it simulates a server-to-server or local webhook call).
+    Server-to-server cron trigger. Accepts ZERO preferences in the payload,
+    purely DB-driven orchestration. Secured via the X-Cron-Secret header.
     """
+    expected_secret = os.getenv("CRON_SECRET")
+    if not expected_secret:
+        raise HTTPException(status_code=500, detail="CRON_SECRET is not configured on the server.")
+    if x_cron_secret != expected_secret:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid Cron Secret.")
+
     try:
         request = NewsletterRequest(user_id=user_id)
         

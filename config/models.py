@@ -7,7 +7,9 @@ Why centralized configuration is important:
 3. Allows different agents to route to different models based on their task (e.g., using a FAST_MODEL for simple extraction, and a REASONING_MODEL for complex analysis or evaluation).
 """
 
-                                                  
-                                                              
-FAST_MODEL = "llama-3.1-8b-instant"
-REASONING_MODEL = "llama-3.3-70b-versatile"
+
+
+
+
+FAST_MODEL = "openai/gpt-oss-20b"
+REASONING_MODEL = "openai/gpt-oss-120b"
