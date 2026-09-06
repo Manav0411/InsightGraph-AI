@@ -16,17 +16,22 @@ DEFAULT_ARXIV_QUERIES = [
 def fetch_arxiv_papers(topics: List[str] = None, max_results: int = 10) -> List[Dict[str, Any]]:
     """
     Fetches the latest research papers from ArXiv.
+
+    We always query by CS AI/ML categories sorted by recency. The verbose UI topic
+    labels ("LLMOps & MLOps", "AI Coding Assistants") make poor arxiv full-text
+    queries; personalization is applied downstream by the ranker instead.
     """
     all_results = []
-    
-    if topics:
-                                                                  
-        search_query = " OR ".join([f'all:"{urllib.parse.quote(t)}"' for t in topics])
-    else:
-        search_query = " OR ".join(DEFAULT_ARXIV_QUERIES)
-        
-    encoded_query = urllib.parse.quote(search_query)
-    url = f'http://export.arxiv.org/api/query?search_query={encoded_query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}'
+
+    search_query = " OR ".join(DEFAULT_ARXIV_QUERIES)
+
+    params = urllib.parse.urlencode({
+        "search_query": search_query,
+        "sortBy": "submittedDate",
+        "sortOrder": "descending",
+        "max_results": max_results,
+    })
+    url = f"http://export.arxiv.org/api/query?{params}"
     
     xml_data = None
     for attempt in range(3):

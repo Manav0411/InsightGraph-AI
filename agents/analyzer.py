@@ -68,9 +68,15 @@ def analyze_articles(state: PipelineState) -> PipelineState:
         api_key=api_key
     )
     
-                                                                                    
-    structured_reasoning = reasoning_llm.with_structured_output(ArticleAnalysis, include_raw=True)
-    structured_fast = fast_llm.with_structured_output(ArticleAnalysis, include_raw=True)
+    # Groq's native Structured Output API (method="json_schema") is supported for
+    # openai/gpt-oss and guarantees schema-valid JSON. The old function_calling
+    # path produced malformed tool-call args on gpt-oss.
+    structured_reasoning = reasoning_llm.with_structured_output(
+        ArticleAnalysis, method="json_schema", include_raw=True
+    )
+    structured_fast = fast_llm.with_structured_output(
+        ArticleAnalysis, method="json_schema", include_raw=True
+    )
     
     news_chain = news_prompt | structured_fast
     arxiv_chain = arxiv_prompt | structured_reasoning
@@ -113,10 +119,11 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                 history_str += f"- [{date_str}] {h['title']}: {h['content'][:300]}...\n"
         
         try:
-                                                       
+            import re
             retries = 0
             analysis_dict = None
-            
+            used_fast_fallback = (chain is news_chain or chain is community_chain)
+
             while True:
                 try:
                     analysis_dict = chain.invoke({
@@ -124,44 +131,47 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                         "content": truncated_content,
                         "history": history_str
                     })
-                    break                               
+                    break
                 except Exception as e:
                     err_msg = str(e)
                     is_rate_limit = "429" in err_msg or "rate_limit" in err_msg or (hasattr(e, "status_code") and e.status_code == 429)
-                    if is_rate_limit:
-                        import re
-                        wait_match = re.search(r'Please try again in (\d+\.?\d*)s', err_msg)
-                        
-                        if wait_match:
-                            wait_time = float(wait_match.group(1)) + 1.0
-                            logger.warning(f"Rate limit hit. API requested wait: {wait_time}s. Retrying...")
-                            time.sleep(wait_time)
-                        else:
-                                                                                                                  
-                            logger.warning(f"Rate limit hit without seconds (likely TPD). Error: {err_msg}. Falling back to FAST_MODEL...")
-                            
-                            fallback_llm = ChatGroq(
-                                model=FAST_MODEL,
-                                temperature=0.0,
-                                max_tokens=MAX_OUTPUT_TOKENS,
-                                api_key=api_key
-                            )
-                            structured_fallback_llm = fallback_llm.with_structured_output(ArticleAnalysis, include_raw=True)
-                            if article.source == "arxiv":
-                                chain = arxiv_prompt | structured_fallback_llm
-                            elif article.source == "hacker_news":
-                                chain = community_prompt | structured_fallback_llm
-                            else:
-                                chain = news_prompt | structured_fallback_llm
-                            
-                                                                       
-                            continue
-                            
+                    if not is_rate_limit:
+                        raise e
+
+                    wait_match = re.search(r'try again in (\d+\.?\d*)s', err_msg)
+                    if wait_match:
+                        wait_time = min(float(wait_match.group(1)) + 1.0, 30.0)
                         retries += 1
                         if retries >= MAX_RETRIES:
                             raise TimeoutError(f"Rate limit retry threshold exceeded for article: {article.title}")
+                        logger.warning(f"Rate limit hit. Waiting {wait_time}s (retry {retries}/{MAX_RETRIES})...")
+                        time.sleep(wait_time)
+                        continue
+
+                    # No wait time returned -> daily-token (TPD) style limit.
+                    if used_fast_fallback:
+                        # Already on the cheap model and still limited: give up on this
+                        # article rather than hammering the API in a tight loop.
+                        raise TimeoutError(f"Token limit reached; skipping analysis for: {article.title}")
+
+                    logger.warning(f"Token limit on REASONING_MODEL. Falling back to FAST_MODEL for: {article.title}")
+                    fallback_llm = ChatGroq(
+                        model=FAST_MODEL,
+                        temperature=0.0,
+                        max_tokens=MAX_OUTPUT_TOKENS,
+                        api_key=api_key
+                    )
+                    structured_fallback_llm = fallback_llm.with_structured_output(
+                        ArticleAnalysis, method="json_schema", include_raw=True
+                    )
+                    if article.source == "arxiv":
+                        chain = arxiv_prompt | structured_fallback_llm
+                    elif article.source == "hacker_news":
+                        chain = community_prompt | structured_fallback_llm
                     else:
-                        raise e
+                        chain = news_prompt | structured_fallback_llm
+                    used_fast_fallback = True
+                    continue
             
                                                              
             analysis = analysis_dict.get("parsed")

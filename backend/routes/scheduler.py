@@ -16,6 +16,11 @@ async def run_scheduler_now(x_cron_secret: str = Header(None)):
         
     if x_cron_secret != expected_secret:
         raise HTTPException(status_code=401, detail="Unauthorized: Invalid Cron Secret.")
-        
-    await daily_intelligence_generation()
-    return {"message": "Autonomous generation completed successfully."}
+
+    summary = await daily_intelligence_generation()
+
+    # Surface a hard failure to the caller (GitHub Actions) so the run goes red.
+    if summary["processed"] > 0 and summary["succeeded"] == 0:
+        raise HTTPException(status_code=502, detail={"message": "All briefing generations failed.", "summary": summary})
+
+    return {"message": "Autonomous generation completed.", "summary": summary}

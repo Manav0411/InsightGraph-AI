@@ -13,5 +13,6 @@ jobs:
     steps:
       - name: Trigger Render Backend
         run: |
-          curl -X POST https://api.insightgraph.dev/scheduler/run-now \
-          -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
+          curl --fail-with-body --silent --show-error --max-time 900 \
+            -X POST https://api.insightgraph.dev/scheduler/run-now \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"

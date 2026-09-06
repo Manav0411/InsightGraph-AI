@@ -109,7 +109,7 @@ class PipelineState(BaseModel):
     pipeline_stage: str = "initialized"
     
     retry_count: int = 0
-    max_retries: int = 2
+    max_retries: int = 1
     analyzer_retry_count: int = 0
     
     final_newsletter: Optional[str] = None
