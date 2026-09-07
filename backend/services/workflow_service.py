@@ -122,8 +122,9 @@ async def run_newsletter_workflow(request: NewsletterRequest, user_profile, task
 
 async def generate_autonomous_briefing(user_id: str):
     """
-    Called by APScheduler. Acts as the background trigger for the pipeline.
-    Creates its own DB session so it doesn't depend on FastAPI request cycles.
+    Per-user background trigger for the daily pipeline (invoked by
+    daily_intelligence_generation). Creates its own DB session so it doesn't
+    depend on FastAPI request cycles.
     """
     from backend.db.database import SessionLocal
     from backend.services.persistence_service import save_briefing
