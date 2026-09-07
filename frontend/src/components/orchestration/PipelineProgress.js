@@ -1,8 +1,10 @@
 import React from 'react';
+import Link from 'next/link';
 
-export default function PipelineProgress({ active, progressData }) {
+export default function PipelineProgress({ active, progressData, onClose }) {
   if (!active) return null;
 
+  const hasError = !!progressData?.error;
   const isComplete = progressData?.stage === 'Complete';
 
   return (
@@ -42,17 +44,44 @@ export default function PipelineProgress({ active, progressData }) {
         <div className="p-6 pb-4 flex justify-between items-start border-b border-white/10">
           <div>
             <h2 className="font-headline text-xl font-bold tracking-wide text-white mb-1">
-              {isComplete ? 'Intelligence Briefing Synthesized' : 'Pipeline Execution'}
+              {hasError ? 'Pipeline Interrupted' : isComplete ? 'Intelligence Briefing Synthesized' : 'Pipeline Execution'}
             </h2>
             <p className="font-label text-sm text-white/60">
-              {isComplete ? 'Execution successful. Redirecting...' : 'Orchestrating AI agents...'}
+              {hasError ? (progressData?.stage || 'Something went wrong') : isComplete ? 'Execution successful. Redirecting...' : 'Orchestrating AI agents...'}
             </p>
           </div>
+          {(hasError || isComplete) && onClose && (
+            <button
+              onClick={onClose}
+              className="text-white/50 hover:text-white transition-colors -mt-1 -mr-1 p-1"
+              aria-label="Close"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          )}
         </div>
-        
+
         <div className="p-6 flex flex-col gap-8 relative min-h-[350px] justify-center">
-          
-          {isComplete ? (
+
+          {hasError ? (
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 bg-error/15 rounded-full flex items-center justify-center mb-6">
+                <span className="material-symbols-outlined text-4xl text-error">error</span>
+              </div>
+              <h3 className="font-headline text-xl font-bold text-white mb-2">Run did not complete</h3>
+              <p className="text-white/70 text-sm max-w-[85%] mx-auto mb-6 break-words">
+                {progressData.error}
+              </p>
+              <div className="flex gap-3">
+                <Link href="/history" className="text-xs font-bold uppercase tracking-wider bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors">
+                  Check History
+                </Link>
+                <button onClick={onClose} className="text-xs font-bold uppercase tracking-wider bg-primary/80 hover:bg-primary text-white px-4 py-2 rounded-lg transition-colors">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ) : isComplete ? (
             <div className="flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
               <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mb-6 relative">
                 <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping"></div>
@@ -138,7 +167,7 @@ export default function PipelineProgress({ active, progressData }) {
           
         </div>
         
-        {!isComplete && (
+        {!isComplete && !hasError && (
           <div className="bg-black/20 p-4 border-t border-white/5 flex justify-between items-center rounded-b-2xl">
             <div className="flex items-center gap-2 text-white/50 font-mono text-xs">
               <span className="material-symbols-outlined text-[14px]">timer</span>

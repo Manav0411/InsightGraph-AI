@@ -1,16 +1,41 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import PipelineProgress from '../../../components/orchestration/PipelineProgress';
 import { API_BASE_URL } from '../../../lib/config';
 import { useUser } from '../../../context/UserContext';
 
+const TASK_KEY = 'active_task_id';
+const MAX_RUN_MS = 30 * 60 * 1000; // give up watching after 30 min
+
+// Map the backend pipeline_stage to a rough completion percentage so the ring
+// advances meaningfully instead of counting distinct stage strings.
+const STAGE_PCT = {
+  initialized: 5,
+  retrieval: 20,
+  validation: 38,
+  ranking: 50,
+  analysis: 78,
+  evaluation: 90,
+  composition: 96,
+};
+
+function stageLabel(raw) {
+  if (!raw) return 'Working';
+  return raw.replace(/^Running:\s*/i, '').trim() || 'Working';
+}
+
 export default function CommandCenter() {
   const { user, preferences, getToken } = useUser();
+  const router = useRouter();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateProgress, setGenerateProgress] = useState(null);
+  const [activeTask, setActiveTask] = useState(null);
+  const runStartRef = useRef(null);
 
   const [analytics, setAnalytics] = useState(null);
   const [history, setHistory] = useState([]);
@@ -24,6 +49,104 @@ export default function CommandCenter() {
       initDashboard();
     }
   }, [user?.id, getToken]);
+
+  // Resume watching an in-flight run if the user navigated away and back.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const existing = window.localStorage.getItem(TASK_KEY);
+    if (existing && !activeTask) {
+      runStartRef.current = Date.now();
+      setGenerateProgress({ stage: 'Reconnecting', log: [], elapsed: '0.0s', progress: 10 });
+      setIsGenerating(true);
+      setActiveTask(existing);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Single polling loop, keyed on the task id. Survives remounts.
+  useEffect(() => {
+    if (!activeTask) return;
+    if (!runStartRef.current) runStartRef.current = Date.now();
+
+    let cancelled = false;
+    let consecutiveFailures = 0;
+
+    const finish = () => {
+      cancelled = true;
+      window.localStorage.removeItem(TASK_KEY);
+    };
+
+    const tick = async () => {
+      if (cancelled) return;
+
+      if (Date.now() - runStartRef.current > MAX_RUN_MS) {
+        finish();
+        setActiveTask(null);
+        setGenerateProgress((p) => ({
+          ...(p || {}),
+          stage: 'Timed out',
+          error: 'Still running after 30 minutes. It may finish in the background — check History shortly.',
+        }));
+        return;
+      }
+
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_BASE_URL}/newsletter/status/${activeTask}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.status === 404) {
+          // Task record gone (server restart). Assume it landed; send them to the reader.
+          finish();
+          setActiveTask(null);
+          router.push('/');
+          return;
+        }
+
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        consecutiveFailures = 0;
+
+        const s = await res.json();
+        const elapsed = ((Date.now() - runStartRef.current) / 1000).toFixed(1) + 's';
+
+        if (s.status === 'completed') {
+          finish();
+          setGenerateProgress((p) => ({ ...(p || {}), stage: 'Complete', progress: 100, elapsed }));
+          setTimeout(() => { setActiveTask(null); router.push('/'); }, 1800);
+        } else if (s.status === 'failed') {
+          finish();
+          setActiveTask(null);
+          setGenerateProgress((p) => ({
+            ...(p || {}),
+            stage: 'Failed',
+            elapsed,
+            error: s.error || 'The pipeline reported a failure.',
+          }));
+        } else {
+          const label = stageLabel(s.stage);
+          setGenerateProgress((p) => ({
+            ...(p || {}),
+            stage: label,
+            elapsed,
+            progress: STAGE_PCT[label.toLowerCase()] ?? p?.progress ?? 10,
+            log: [`[AGENT] INFO: ${label}`].slice(-4),
+          }));
+        }
+      } catch (err) {
+        consecutiveFailures += 1;
+        // Render free tier often 5xx's while the pipeline hogs the worker — keep
+        // trying, just surface that we're waiting.
+        if (consecutiveFailures >= 5) {
+          setGenerateProgress((p) => ({ ...(p || {}), stage: 'Reconnecting' }));
+        }
+        console.error('Polling error:', err);
+      }
+    };
+
+    tick();
+    const id = setInterval(tick, 4000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [activeTask, getToken, router]);
 
   const fetchHistory = async () => {
     try {
@@ -74,88 +197,35 @@ export default function CommandCenter() {
 
   const generateBriefing = async () => {
     setIsGenerating(true);
-    setGenerateProgress({ stage: 'Initializing Task...', log: [], elapsed: '0.0s', progress: 0 });
-    const startTime = Date.now();
-    let currentLogs = [];
-    
-    const timerInterval = setInterval(() => {
-      setGenerateProgress(prev => prev ? { ...prev, elapsed: ((Date.now() - startTime) / 1000).toFixed(1) + 's' } : null);
-    }, 100);
+    setGenerateProgress({ stage: 'Queued', log: [], elapsed: '0.0s', progress: 5 });
+    runStartRef.current = Date.now();
 
     try {
       const token = await getToken();
-      
-      const initialResponse = await fetch(`${API_BASE_URL}/newsletter/generate-async`, {
+      const res = await fetch(`${API_BASE_URL}/newsletter/generate-async`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ user_id: user.id })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ user_id: user.id }),
       });
-      
-      if (!initialResponse.ok) {
-        throw new Error('Failed to start generation task');
+
+      if (!res.ok) {
+        let detail = 'Failed to start generation task';
+        try { detail = (await res.json()).detail || detail; } catch {}
+        throw new Error(detail);
       }
-      
-      const { task_id } = await initialResponse.json();
-      
-      let stagesCount = 0;
-      let lastStage = '';
-      
-      const pollInterval = setInterval(async () => {
-        try {
-          const currentToken = await getToken();
-          const statusResponse = await fetch(`${API_BASE_URL}/newsletter/status/${task_id}`, {
-            headers: { 'Authorization': `Bearer ${currentToken}` }
-          });
-          
-          if (statusResponse.ok) {
-            const statusData = await statusResponse.json();
-            
-            if (statusData.status === 'running') {
-              if (statusData.stage !== lastStage) {
-                stagesCount++;
-                lastStage = statusData.stage;
-                const newLog = `[AGENT] INFO: ${statusData.stage}`;
-                currentLogs = [...currentLogs, newLog].slice(-4);
-                
-                setGenerateProgress(prev => ({
-                  ...prev,
-                  stage: statusData.stage,
-                  log: currentLogs,
-                  progress: Math.min((stagesCount / 6) * 100, 95)
-                }));
-              }
-            } else if (statusData.status === 'completed') {
-              clearInterval(pollInterval);
-              clearInterval(timerInterval);
-              setGenerateProgress(prev => ({ ...prev, progress: 100, stage: 'Complete' }));
-              setTimeout(() => {
-                window.location.href = '/';
-              }, 2500);
-            } else if (statusData.status === 'failed') {
-              clearInterval(pollInterval);
-              clearInterval(timerInterval);
-              currentLogs = [...currentLogs, `[SYS] ERROR: ${statusData.error}`].slice(-4);
-              setGenerateProgress(prev => ({ ...prev, stage: 'Failed', log: currentLogs }));
-              setTimeout(() => setIsGenerating(false), 5000);
-            }
-          }
-        } catch (pollErr) {
-          console.error("Polling error:", pollErr);
-        }
-      }, 3000);
-      
+
+      const { task_id } = await res.json();
+      window.localStorage.setItem(TASK_KEY, task_id);
+      setActiveTask(task_id); // polling useEffect takes over from here
     } catch (error) {
       console.error('Generation Error:', error);
-      clearInterval(timerInterval);
-      
-      currentLogs = [...currentLogs, `[SYS] ERROR: ${error.message}. Signal synthesis interrupted.`].slice(-4);
-      setGenerateProgress(prev => ({ ...prev, stage: 'Failed', log: currentLogs }));
-      
-      setTimeout(() => setIsGenerating(false), 5000);
+      setGenerateProgress((p) => ({ ...(p || {}), stage: 'Failed', error: error.message }));
     }
+  };
+
+  const dismissProgress = () => {
+    setIsGenerating(false);
+    setGenerateProgress(null);
   };
 
   if (loading) return <div className="p-8 font-body text-on-surface-variant flex items-center justify-center min-h-[50vh]"><div className="animate-pulse">Initializing Telemetry...</div></div>;
@@ -200,7 +270,7 @@ export default function CommandCenter() {
         {isGenerating && <p className="mt-4 text-sm font-bold text-tertiary animate-pulse uppercase tracking-widest">Pipeline Active - Streaming Telemetry</p>}
       </div>
 
-      <PipelineProgress active={isGenerating} progressData={generateProgress} />
+      <PipelineProgress active={isGenerating} progressData={generateProgress} onClose={dismissProgress} />
 
       <div className="w-full bg-surface-container-low rounded-3xl border border-outline-variant/20 p-8 soft-shadow">
         <div className="flex justify-between items-center mb-8 border-b border-outline-variant/20 pb-4">
@@ -400,10 +470,10 @@ export default function CommandCenter() {
       </div>
       
       <div className="flex items-center justify-center mt-4">
-        <a href="/" className="group flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-bold uppercase tracking-widest text-sm">
-          Return to Intelligence Reader 
+        <Link href="/" className="group flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-bold uppercase tracking-widest text-sm">
+          Return to Intelligence Reader
           <span className="material-symbols-outlined transform group-hover:translate-x-1 transition-transform">arrow_forward</span>
-        </a>
+        </Link>
       </div>
 
     </div>
