@@ -52,25 +52,25 @@ async def _validate_single_article(llm: ChatGroq, article: Article, sem: asyncio
 
     prompt = _build_prompt(article)
 
+    # Validation is a cheap best-effort firewall. It must not burn rate-limit
+    # budget the analyzer needs, so on ANY rate limit we fail open immediately
+    # (one short retry only if the API hands back a small explicit wait).
     async with sem:
-        retries = 0
-        while retries < 6:
+        for attempt in range(2):
             try:
                 response = await llm.ainvoke(prompt)
                 return article, _parse_relevance(getattr(response, "content", "") or "")
             except Exception as e:
                 err_msg = str(e)
-                if "429" in err_msg or "rate_limit" in err_msg:
-                    wait_match = re.search(r"try again in (\d+\.?\d*)s", err_msg)
-                    wait_time = float(wait_match.group(1)) + 1.0 if wait_match else (5 + (2 ** retries))
-                    logger.warning(f"[Validator] Rate limit for '{article.title}'. Waiting {wait_time:.1f}s...")
-                    await asyncio.sleep(wait_time)
-                    retries += 1
-                else:
+                is_rate_limit = "429" in err_msg or "rate_limit" in err_msg
+                wait_match = re.search(r"try again in (\d+\.?\d*)s", err_msg)
+                if is_rate_limit and attempt == 0 and wait_match and float(wait_match.group(1)) <= 5:
+                    await asyncio.sleep(float(wait_match.group(1)) + 0.5)
+                    continue
+                if not is_rate_limit:
                     logger.warning(f"[Validator] Check failed for '{article.title}', keeping it: {e}")
-                    return article, True
+                return article, True
 
-        logger.warning(f"[Validator] Rate limit retries exhausted for '{article.title}', keeping it.")
         return article, True
 
 
