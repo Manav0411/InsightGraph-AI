@@ -209,9 +209,15 @@ def analyze_articles(state: PipelineState) -> PipelineState:
                     logger.warning(f"Failed to salvage: {parse_err}")
             
             if not salvaged:
-                logger.warning(f"Error analyzing article '{article.title}' (Hallucinated schema): {e}")
-                                                                                                 
-                                                                                          
+                if "Token limit reached" in err_msg:
+                    logger.warning(f"[Analyzer] Skipped '{article.title}' - Groq daily token limit reached.")
+                    state.metadata.token_limit_hit = True
+                elif "Rate limit retry threshold" in err_msg:
+                    logger.warning(f"[Analyzer] Skipped '{article.title}' - rate-limit retries exhausted.")
+                else:
+                    logger.warning(f"[Analyzer] Failed to analyze '{article.title}': {e}")
+
+                # Mark as failed so the evaluator prunes it.
                 article.summary = "Summary generation failed."
                 article.details = []
                 article.why_it_matters = "Analysis failed."

@@ -12,6 +12,9 @@ RSS_MAX_RESULTS_PER_FEED = 3
 # the evaluator will trim away.
 MAX_ARTICLES_TO_ANALYZE = 12
 TARGET_FINAL_ARTICLES = 10
+# Only trigger a (costly) retrieval+re-analysis recovery lap if the briefing
+# would otherwise be genuinely thin. A run with 6-9 solid articles just ships.
+MIN_VIABLE_ARTICLES = 6
 MIN_TREND_SCORE = 1.0
 
 # --- Analyzer ---
