@@ -1,3 +1,4 @@
+// Next 16 renamed the `middleware` file convention to `proxy` (Node runtime, no edge).
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)']);
