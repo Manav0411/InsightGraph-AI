@@ -17,9 +17,20 @@ def route_after_evaluation(state: PipelineState) -> str:
     recovery pass back through the retriever (which scales up its search limits),
     or whether to proceed to composition.
     """
-    from config.settings import TARGET_FINAL_ARTICLES
+    from config.settings import MIN_VIABLE_ARTICLES
 
     valid_articles = state.articles
+
+    # A recovery lap re-runs retrieval + validation + analysis, all of which
+    # spend Groq tokens. If we already hit the daily token limit, a retry would
+    # just fail the same way - ship what we have.
+    if state.metadata.token_limit_hit:
+        logger.warning(
+            "[Graph] Shortfall caused by a token limit; recovery would be futile. "
+            "Evaluator → Composer."
+        )
+        return "composer"
+
     has_tavily = any(a.source == "tavily" for a in valid_articles)
     avg_trend_score = (
         sum(a.trend_score for a in valid_articles) / len(valid_articles)
@@ -27,7 +38,7 @@ def route_after_evaluation(state: PipelineState) -> str:
     )
 
     needs_recovery = (
-        len(valid_articles) < TARGET_FINAL_ARTICLES
+        len(valid_articles) < MIN_VIABLE_ARTICLES
         or not has_tavily
         or avg_trend_score < 2.0
     )

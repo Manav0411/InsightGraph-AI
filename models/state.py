@@ -88,6 +88,10 @@ class PipelineMetadata(BaseModel):
     grounding_rejections: int = 0
     validation_failures: int = 0
 
+    # Set when the analyzer had to skip an article because Groq's daily token
+    # budget was exhausted. Signals that a recovery loop would be futile.
+    token_limit_hit: bool = False
+
     generated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
