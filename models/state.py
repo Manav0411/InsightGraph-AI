@@ -110,7 +110,6 @@ class PipelineState(BaseModel):
     
     retry_count: int = 0
     max_retries: int = 1
-    analyzer_retry_count: int = 0
     
     final_newsletter: Optional[str] = None
     user_profile: Optional[UserProfile] = None
