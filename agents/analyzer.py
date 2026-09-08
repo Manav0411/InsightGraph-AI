@@ -29,20 +29,7 @@ def analyze_articles(state: PipelineState) -> PipelineState:
     Operates purely on the PipelineState object.
     """
     start_time = time.perf_counter()
-    
-                                           
-    if state.pipeline_stage == "analysis":
-        state.analyzer_retry_count += 1
-        state.metadata.recovery_attempts += 1
-        state.metadata.conditional_routes_triggered += 1
-        logger.warning(
-            f"[Graph] Routing from Analyzer → Analyzer (Retry). "
-            f"Retry Count: {state.analyzer_retry_count}/1"
-        )
-                                                                   
-        state.errors = [e for e in state.errors if not ("Analysis failed" in e or "analyzer" in e.lower())]
-        state.warnings = [w for w in state.warnings if not ("Analysis failed" in w or "analyzer" in w.lower())]
-        
+
     state.pipeline_stage = "analysis"
     logger.info("Analyzing articles using Groq...")
     logger.info("[Analyzer] Using grounded summarization mode")

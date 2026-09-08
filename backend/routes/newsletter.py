@@ -1,7 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Header
-import asyncio
-import json
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from backend.schemas.requests import NewsletterRequest
 from backend.schemas.responses import NewsletterResponse
@@ -9,7 +6,6 @@ from backend.services.workflow_service import run_newsletter_workflow
 from backend.db.database import get_db, SessionLocal
 from backend.services.persistence_service import save_briefing, fetch_latest_briefing, fetch_briefing_history_filtered, fetch_briefing_with_articles
 from backend.dependencies.auth import get_current_user
-from utils.runtime_store import load_last_newsletter
 from backend.services.task_manager import create_task, get_task_status, mark_task_completed, mark_task_failed
 import os
 
@@ -226,47 +222,6 @@ async def export_briefing(briefing_id: str, db: Session = Depends(get_db), user_
             
     from fastapi.responses import PlainTextResponse
     return PlainTextResponse(md, media_type="text/markdown", headers={"Content-Disposition": f"attachment; filename=InsightGraph_{briefing_id}.md"})
-
-@router.post("/generate-stream")
-async def generate_newsletter_stream(request: NewsletterRequest, user_id: str = Depends(get_current_user)):
-    """
-    Simulates a live workflow execution panel by streaming progress updates via SSE,
-    followed by the actual generation.
-    """
-    request.user_id = user_id
-    
-    async def event_generator():
-        stages = [
-            ("Retrieving sources", 2.5),
-            ("Validating articles", 1.0),
-            ("Ranking intelligence", 0.5),
-            ("Analyzing trends", 4.0),
-            ("Evaluating summaries", 1.5),
-            ("Composing digest", 1.0)
-        ]
-        for stage, delay in stages:
-            yield f"data: {{\"stage\": \"{stage}\", \"status\": \"started\"}}\n\n"
-            await asyncio.sleep(delay)
-            yield f"data: {{\"stage\": \"{stage}\", \"status\": \"completed\"}}\n\n"
-            
-        yield f"data: {{\"stage\": \"Finalizing\", \"status\": \"started\"}}\n\n"
-        
-        try:
-            with SessionLocal() as db:
-                verify_generation_access(db, user_id)
-                user_profile = get_user_profile_pydantic(db, user_id)
-                
-            response = await run_newsletter_workflow(request, user_profile)
-            
-            with SessionLocal() as db:
-                save_briefing(db, user_id, response)
-            
-            yield f"data: {{\"stage\": \"Done\", \"status\": \"completed\", \"result\": \"success\"}}\n\n"
-        except Exception as e:
-            error_payload = json.dumps({"stage": "Error", "status": "failed", "error": str(e)})
-            yield f"data: {error_payload}\n\n"
-            
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.post("/generate-autonomous/{user_id}", response_model=NewsletterResponse)
 async def generate_autonomous(user_id: str, x_cron_secret: str = Header(None)):
