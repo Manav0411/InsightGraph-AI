@@ -1,0 +1,36 @@
+# Direct dependencies (intent). Edit here, then regenerate the fully-pinned
+# lockfile with:
+#     uv pip compile requirements.in --python-version 3.13 -o requirements.txt
+# Render installs from the compiled requirements.txt.
+
+# --- LLM orchestration ---
+langgraph==1.2.0
+langchain==1.3.1
+langchain-core==1.4.0
+langchain-groq==1.1.2
+langsmith==0.8.5
+
+# --- Retrieval / content ---
+tavily-python==0.7.24
+requests==2.34.2
+huggingface_hub==1.16.1
+numpy==2.4.6
+
+# --- API ---
+fastapi==0.136.1
+uvicorn[standard]==0.47.0
+pydantic==2.13.4
+PyJWT==2.13.0
+cryptography==48.0.0
+svix==1.94.0
+
+# --- Database ---
+SQLAlchemy==2.0.49
+psycopg2-binary==2.9.12
+alembic==1.18.4
+pgvector==0.4.2
+
+# --- Email / CLI ---
+resend==2.30.1
+rich==15.0.0
+python-dotenv==1.2.2
