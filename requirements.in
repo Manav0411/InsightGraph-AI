@@ -2,6 +2,7 @@
 # lockfile with:
 #     uv pip compile requirements.in --python-version 3.13 -o requirements.txt
 # Render installs from the compiled requirements.txt.
+# Test-only deps live in requirements-dev.txt (not part of this lockfile).
 
 # --- LLM orchestration ---
 langgraph==1.2.0
