@@ -1,0 +1,10 @@
+# Pytest configuration only. This does NOT make the repo an installable package
+# (no [build-system] / [project] table), so the Render deploy is unaffected.
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]

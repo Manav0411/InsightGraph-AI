@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <id>http://arxiv.org/abs/2501.00001v1</id>
+    <title>A Study of Large Language Models</title>
+    <summary>We investigate scaling behaviour of large models in depth.</summary>
+    <link href="http://arxiv.org/abs/2501.00001v1" rel="alternate" type="text/html"/>
+    <link title="pdf" href="http://arxiv.org/pdf/2501.00001v1" rel="related" type="application/pdf"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2501.00002v1</id>
+    <title>No PDF Link Paper</title>
+    <summary>Abstract without a pdf link element.</summary>
+    <link href="http://arxiv.org/abs/2501.00002v1" rel="alternate" type="text/html"/>
+  </entry>
+</feed>
