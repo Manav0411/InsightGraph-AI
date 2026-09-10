@@ -7,7 +7,7 @@ LangGraph pipeline reads the day's AI news, research and community chatter,
 ranks it against the topics you care about, grounds every claim against a
 source, and files one dated briefing — on the web and in your inbox by 8 AM.
 
-![The landing page — an overnight run resolving 1,847 raw signals down to 12](docs/screenshots/landing-hero.jpg)
+![The morning briefing — a dated document of ranked, source-grounded signals](docs/screenshots/reader.jpg)
 
 ---
 
