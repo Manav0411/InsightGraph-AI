@@ -104,7 +104,9 @@
 .lp-seg-head p { margin-top: 14px; color: var(--ink-soft); font-size: 1.02rem; }
 
 /* HERO — the overnight run (self-contained terminal) */
-.lp-hero { background: var(--term); color: var(--term-ink); padding: 78px 0 82px; }
+/* Pull up under the app's translucent 64px nav so the dark hero bleeds to the
+   very top; add that 64px back to the top padding so content stays clear. */
+.lp-hero { background: var(--term); color: var(--term-ink); margin-top: -64px; padding: 142px 0 82px; }
 .lp-run-meta { font-family: var(--code); font-size: 12px; color: var(--term-faint); letter-spacing: 0.02em; }
 .lp-run-meta b { color: var(--term-signal); font-weight: 500; }
 
@@ -231,7 +233,7 @@
 @media (max-width: 880px) {
   .lp-cols, .lp-stages { grid-template-columns: 1fr; gap: 22px; }
   .lp-seg, .lp-cta { padding: 60px 0; }
-  .lp-hero { padding: 52px 0 58px; }
+  .lp-hero { padding: 116px 0 58px; }
   .lp-l { grid-template-columns: 50px 76px 1fr; font-size: 12px; }
   .lp-machine { padding: 22px; }
 }
