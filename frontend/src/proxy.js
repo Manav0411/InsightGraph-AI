@@ -3,7 +3,9 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 // `/` is public — signed-out visitors get the marketing landing (src/app/page.js);
 // signed-in visitors get the Intelligence Reader from the same route.
-const isPublicRoute = createRouteMatcher(['/', '/sign-in(.*)', '/sign-up(.*)']);
+// `/style-guide` is a dev-only primitives reference (404s in production) — public
+// so `npm run dev` doesn't bounce it to sign-in.
+const isPublicRoute = createRouteMatcher(['/', '/style-guide', '/sign-in(.*)', '/sign-up(.*)']);
 
 export default clerkMiddleware(async (auth, req) => {
   if (!isPublicRoute(req)) {

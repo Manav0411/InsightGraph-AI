@@ -64,9 +64,16 @@ module.exports = {
             "full": "9999px"
         },
         "fontFamily": {
+            // Legacy names — still used by not-yet-migrated screens. Remove once
+            // every surface is on the design-system faces below.
             "headline": ["Literata", "serif"],
             "body": ["Nunito Sans", "sans-serif"],
-            "label": ["Nunito Sans", "sans-serif"]
+            "label": ["Nunito Sans", "sans-serif"],
+            // Design system ("Warm Editorial"): a dramatic display serif, a newsy
+            // text serif, and a terminal mono that also carries UI/label duty.
+            "display": ["Instrument Serif", "Georgia", "Times New Roman", "serif"],
+            "reader": ["Newsreader", "Georgia", "Times New Roman", "serif"],
+            "mono": ["Spline Sans Mono", "ui-monospace", "SF Mono", "Menlo", "monospace"]
         }
     }
   },
