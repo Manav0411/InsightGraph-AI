@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { API_BASE_URL } from '../../lib/config';
 import { useUser } from '../../context/UserContext';
+import { PageShell, PageHeader, Card, Chip, Button, TextInput } from '../../components/ui';
 
 const SUGGESTED_TOPICS = [
   'AI Agents & Agentic Workflows',
@@ -22,6 +22,21 @@ const SUGGESTED_TOPICS = [
   'AI Reasoning & Planning'
 ];
 
+function SectionCard({ label, description, children, action }) {
+  return (
+    <Card className="p-6 md:p-8 flex flex-col gap-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-primary">{label}</span>
+          {description && <p className="font-reader text-sm text-on-surface-variant leading-relaxed">{description}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </Card>
+  );
+}
+
 export default function Preferences() {
   const { preferences, updatePreferences, loading: contextLoading } = useUser();
   const [topics, setTopics] = useState([]);
@@ -34,7 +49,6 @@ export default function Preferences() {
   const [isAddingTopic, setIsAddingTopic] = useState(false);
   const [isAddingSource, setIsAddingSource] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const suggestionsRef = useRef(null);
 
@@ -75,17 +89,9 @@ export default function Preferences() {
     }
   };
 
-  const removeTopic = (index) => {
-    setTopics(topics.filter((_, i) => i !== index));
-  };
-
-  const removeExclusion = (index) => {
-    setExclusions(exclusions.filter((_, i) => i !== index));
-  };
-  
-  const removeSource = (index) => {
-    setSources(sources.filter((_, i) => i !== index));
-  };
+  const removeTopic = (index) => setTopics(topics.filter((_, i) => i !== index));
+  const removeExclusion = (index) => setExclusions(exclusions.filter((_, i) => i !== index));
+  const removeSource = (index) => setSources(sources.filter((_, i) => i !== index));
 
   const addTopic = (e) => {
     if (e.key === 'Enter' && newTopic.trim()) {
@@ -110,194 +116,170 @@ export default function Preferences() {
     }
   };
 
-  if (contextLoading) return <div className="p-8">Loading Preferences...</div>;
+  if (contextLoading) {
+    return (
+      <PageShell>
+        <p className="font-mono text-[13px] text-on-surface-variant py-16 text-center">Loading preferences…</p>
+      </PageShell>
+    );
+  }
 
   return (
-    <div className="w-full max-w-6xl space-y-8 mx-auto">
-      <header className="mb-10">
-        <h1 className="font-headline text-4xl font-bold text-on-surface mb-2">Personalization Preferences</h1>
-        <p className="text-on-surface-variant text-lg leading-relaxed max-w-2xl">Tailor your InsightGraph experience by managing what matters most. Your configurations directly influence the intelligence briefings and analytics surfaced to you.</p>
-      </header>
+    <PageShell className="flex flex-col gap-8">
+      <PageHeader
+        title="Preferences"
+        subtitle="What the pipeline boosts, what it drops, and how it reaches you. Changes take effect on the next night's run."
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-min">
-        
-        <div className="lg:col-span-2 bg-gradient-to-br from-surface-container-low to-transparent rounded-2xl p-8 border border-outline-variant/30 shadow-sm flex flex-col h-full">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h3 className="font-headline text-xl font-semibold text-primary flex items-center gap-2">
-                <span className="material-symbols-outlined text-tertiary">psychology</span>
-                Core Topics
-              </h3>
-              <p className="text-on-surface-variant text-sm mt-1">Define the thematic pillars of your intelligence feed.</p>
-            </div>
-            {isAddingTopic ? (
-              <input 
-                autoFocus
-                type="text" 
-                value={newTopic}
-                onChange={e => setNewTopic(e.target.value)}
-                onKeyDown={addTopic}
-                onBlur={() => setIsAddingTopic(false)}
-                className="text-sm font-semibold text-on-surface bg-surface border border-primary focus:outline-none px-4 py-2 rounded-lg"
-                placeholder="Type and press Enter..."
-              />
-            ) : (
-              <button onClick={() => setIsAddingTopic(true)} className="text-sm font-semibold text-primary hover:bg-primary/10 px-4 py-2 rounded-lg transition-colors flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">add</span> Add Topic
-              </button>
+      <SectionCard
+        label="Topics"
+        description="The ranker adds a fixed boost to anything matching these."
+        action={
+          isAddingTopic ? (
+            <input
+              autoFocus
+              type="text"
+              value={newTopic}
+              onChange={e => setNewTopic(e.target.value)}
+              onKeyDown={addTopic}
+              onBlur={() => setIsAddingTopic(false)}
+              placeholder="Type and press Enter…"
+              className="font-mono text-xs bg-surface border border-primary rounded-lg px-3 py-2 focus:outline-none text-on-surface"
+            />
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => setIsAddingTopic(true)}>
+              <span className="material-symbols-outlined text-[16px]">add</span> Add
+            </Button>
+          )
+        }
+      >
+        <div className="flex flex-wrap gap-2">
+          {topics.map((topic, i) => (
+            <Chip key={i} selected onRemove={() => removeTopic(i)}>{topic}</Chip>
+          ))}
+          <div className="relative" ref={suggestionsRef}>
+            <Chip
+              as="button"
+              type="button"
+              onClick={() => setShowSuggestions(!showSuggestions)}
+              className="cursor-pointer border-dashed border-primary/50 text-primary"
+            >
+              <span className="material-symbols-outlined text-[14px]">explore</span> Suggestions
+            </Chip>
+            {showSuggestions && (
+              <Card className="absolute top-full left-0 mt-2 w-64 z-10 py-2 max-h-64 overflow-y-auto">
+                {SUGGESTED_TOPICS.map((topic, i) => {
+                  const isAdded = topics.includes(topic);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        if (!isAdded) setTopics([...topics, topic]);
+                        setShowSuggestions(false);
+                      }}
+                      disabled={isAdded}
+                      className={`w-full text-left px-4 py-2 font-reader text-sm flex items-center justify-between transition-colors ${
+                        isAdded ? 'text-on-surface-variant/50 cursor-not-allowed' : 'text-on-surface hover:bg-surface-variant/50'
+                      }`}
+                    >
+                      {topic}
+                      {isAdded && <span className="material-symbols-outlined text-[16px]">check</span>}
+                    </button>
+                  );
+                })}
+              </Card>
             )}
           </div>
-          
-          <div className="flex flex-wrap gap-3">
-            {topics.map((topic, i) => (
-              <div key={i} className={`rounded-full px-5 py-2.5 flex items-center gap-2 text-sm font-semibold transition-colors cursor-pointer border shadow-sm ${i % 2 === 0 ? 'bg-primary-container text-on-primary-container border-primary/10' : i % 3 === 0 ? 'bg-tertiary-container text-on-tertiary-container border-tertiary/10' : 'bg-surface-container-high text-on-surface hover:bg-surface-variant border-outline-variant/30'}`}>
-                {topic}
-                <button onClick={() => removeTopic(i)} className="hover:text-error transition-colors flex items-center"><span className="material-symbols-outlined text-[18px]">close</span></button>
-              </div>
-            ))}
-            <div className="relative" ref={suggestionsRef}>
-              <button 
-                onClick={() => setShowSuggestions(!showSuggestions)}
-                className="rounded-full px-5 py-2.5 flex items-center gap-2 text-sm font-semibold border border-dashed border-primary/50 text-primary hover:bg-primary/5 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">explore</span> Explore Suggestions
-              </button>
-              
-              {showSuggestions && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-surface border border-outline-variant/30 rounded-xl shadow-lg z-10 py-2 max-h-64 overflow-y-auto">
-                  {SUGGESTED_TOPICS.map((topic, i) => {
-                    const isAdded = topics.includes(topic);
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          if (!isAdded) {
-                            setTopics([...topics, topic]);
-                          }
-                          setShowSuggestions(false);
-                        }}
-                        disabled={isAdded}
-                        className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between ${isAdded ? 'text-on-surface-variant/50 cursor-not-allowed' : 'text-on-surface hover:bg-surface-variant cursor-pointer'}`}
-                      >
-                        {topic}
-                        {isAdded && <span className="material-symbols-outlined text-[16px]">check</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
+      </SectionCard>
 
-        <div className="lg:col-span-1 bg-gradient-to-br from-surface-container-low to-transparent rounded-2xl p-8 border border-outline-variant/30 shadow-sm flex flex-col h-full">
-          <div className="mb-6">
-            <h3 className="font-headline text-xl font-semibold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-secondary">block</span>
-              Exclusions
-            </h3>
-            <p className="text-on-surface-variant text-sm mt-1">Mute noise by excluding specific terms or entities.</p>
-          </div>
-          <div className="relative w-full mb-4">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-            <input 
-              className="w-full bg-surface border border-outline-variant/50 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-outline/70" 
-              placeholder="Add an exclusion... (press Enter)" 
-              type="text"
-              value={newExclusion}
-              onChange={e => setNewExclusion(e.target.value)}
-              onKeyDown={addExclusion}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2 overflow-y-auto max-h-32 pr-2">
+      <SectionCard
+        label="Exclusions"
+        description="Matching signals are dropped in the ranker, before the analyzer spends a token on them."
+      >
+        <TextInput
+          icon="block"
+          placeholder="Add a term and press Enter…"
+          value={newExclusion}
+          onChange={e => setNewExclusion(e.target.value)}
+          onKeyDown={addExclusion}
+          className="max-w-sm"
+        />
+        {exclusions.length > 0 && (
+          <div className="flex flex-wrap gap-2">
             {exclusions.map((exclusion, i) => (
-              <div key={i} className="bg-error-container/50 text-on-error-container rounded-md px-3 py-1.5 flex items-center gap-1.5 text-xs font-semibold border border-error/10">
-                {exclusion}
-                <button onClick={() => removeExclusion(i)} className="hover:text-error flex items-center"><span className="material-symbols-outlined text-[14px]">close</span></button>
-              </div>
+              <Chip key={i} muted onRemove={() => removeExclusion(i)}>{exclusion}</Chip>
             ))}
           </div>
-        </div>
+        )}
+      </SectionCard>
 
-        <div className="lg:col-span-1 bg-gradient-to-br from-surface-container-low to-transparent rounded-2xl p-8 border border-outline-variant/30 shadow-sm">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h3 className="font-headline text-xl font-semibold text-primary flex items-center gap-2">
-                <span className="material-symbols-outlined text-tertiary">verified</span>
-                Trusted Sources
-              </h3>
-              <p className="text-on-surface-variant text-sm mt-1">Weight these publishers higher in your feed.</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            {sources.map((source, i) => (
-              <div key={i} className="flex items-center justify-between group p-2 -mx-2 rounded-lg hover:bg-surface-variant/30 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border ${i % 3 === 0 ? 'bg-primary/10 text-primary border-primary/20' : i % 3 === 1 ? 'bg-tertiary/10 text-tertiary border-tertiary/20' : 'bg-secondary/10 text-secondary border-secondary/20'}`}>
-                    {source.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-on-surface">{source}</h4>
-                    <p className="text-xs text-on-surface-variant">Trusted Source</p>
-                  </div>
-                </div>
-                <button onClick={() => removeSource(i)} className="text-outline opacity-0 group-hover:opacity-100 hover:text-error transition-all p-1">
-                  <span className="material-symbols-outlined text-[20px]">delete</span>
-                </button>
-              </div>
-            ))}
-          </div>
-          {isAddingSource ? (
-            <input 
+      <SectionCard
+        label="Trusted sources"
+        description="Weighted higher when they appear in a run."
+        action={
+          isAddingSource ? (
+            <input
               autoFocus
-              type="text" 
+              type="text"
               value={newSource}
               onChange={e => setNewSource(e.target.value)}
               onKeyDown={addSource}
               onBlur={() => setIsAddingSource(false)}
-              className="w-full mt-6 py-2.5 px-4 text-sm font-semibold text-on-surface bg-surface border border-primary focus:outline-none rounded-lg"
-              placeholder="Type domain (e.g. arxiv) and press Enter..."
+              placeholder="e.g. arxiv — press Enter"
+              className="font-mono text-xs bg-surface border border-primary rounded-lg px-3 py-2 focus:outline-none text-on-surface"
             />
           ) : (
-            <button onClick={() => setIsAddingSource(true)} className="w-full mt-6 py-2.5 text-sm font-semibold text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors border border-primary/10 flex justify-center items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">manage_search</span> Manage Directory
-            </button>
-          )}
-        </div>
-
-        <div className="lg:col-span-2 bg-gradient-to-br from-surface-container-low to-transparent rounded-2xl p-8 border border-outline-variant/30 shadow-sm">
-          <div className="mb-6">
-            <h3 className="font-headline text-xl font-semibold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-secondary">mail</span>
-              Delivery Preferences
-            </h3>
+            <Button variant="ghost" size="sm" onClick={() => setIsAddingSource(true)}>
+              <span className="material-symbols-outlined text-[16px]">add</span> Add
+            </Button>
+          )
+        }
+      >
+        {sources.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {sources.map((source, i) => (
+              <Chip key={i} onRemove={() => removeSource(i)}>{source}</Chip>
+            ))}
           </div>
-          
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h4 className="text-sm font-bold text-on-surface mb-1">Daily Email Briefing</h4>
-              <p className="text-xs text-on-surface-variant leading-relaxed max-w-md">Automatically send my synthesized intelligence digest to my registered email address every morning at 8:00 AM.</p>
-            </div>
-            <label className="relative inline-flex items-center shrink-0 mt-1 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={emailDelivery} 
-                onChange={(e) => setEmailDelivery(e.target.checked)} 
-                className="sr-only peer" 
-              />
-              <div className="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline-variant/30 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
+        ) : (
+          <p className="font-reader text-sm text-on-surface-variant">No trusted sources set — all feeds weighted equally.</p>
+        )}
+      </SectionCard>
+
+      <SectionCard label="Delivery">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h4 className="font-reader font-semibold text-on-surface">Daily email briefing</h4>
+            <p className="font-reader text-sm text-on-surface-variant leading-relaxed max-w-md">
+              Send the briefing to your registered address every morning at 8:00 AM.
+            </p>
           </div>
+          <label className="relative inline-flex items-center shrink-0 mt-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={emailDelivery}
+              onChange={(e) => setEmailDelivery(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-surface-variant rounded-full peer peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+          </label>
         </div>
+      </SectionCard>
 
+      <div className="flex justify-end gap-3 pt-2">
+        <Button variant="ghost" onClick={() => {
+          setTopics(preferences?.preferred_topics || []);
+          setExclusions(preferences?.excluded_topics || []);
+          setSources(preferences?.preferred_sources || []);
+          setEmailDelivery(preferences?.email_delivery_enabled ?? true);
+        }}>
+          Discard changes
+        </Button>
+        <Button onClick={savePreferences} disabled={saving}>
+          {saving ? 'Saving…' : 'Save preferences'}
+        </Button>
       </div>
-
-      <div className="flex justify-end gap-4 pt-8 mt-10">
-        <button className="px-6 py-3 rounded-xl font-bold text-on-surface hover:bg-surface-variant/50 transition-all duration-300">Discard Changes</button>
-        <button onClick={savePreferences} disabled={saving} className="px-6 py-3 rounded-xl font-bold text-on-primary bg-gradient-to-r from-primary to-primary/80 hover:-translate-y-0.5 transition-all duration-300 shadow-[0_4px_12px_rgba(74,124,89,0.3)] hover:shadow-[0_6px_20px_rgba(74,124,89,0.35)] disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none">
-          {saving ? 'Saving...' : 'Save Preferences'}
-        </button>
-      </div>
-    </div>
+    </PageShell>
   );
 }
