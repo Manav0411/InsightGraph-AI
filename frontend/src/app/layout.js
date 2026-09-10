@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { ClerkThemeProvider } from '../components/ClerkThemeProvider';
+import { Button } from '../components/ui';
 import { Agentation } from "agentation";
 
 export const metadata = {
@@ -30,10 +31,12 @@ export default async function RootLayout({ children }) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ClerkThemeProvider>
             <UserProvider>
-              <nav className="font-body leading-relaxed fixed top-0 w-full z-50 bg-surface-container-low border-b border-outline-variant/20 shadow-sm transition-all duration-300 ease-in-out">
+              <nav className="font-mono fixed top-0 w-full z-50 bg-surface-container-low/85 backdrop-blur border-b border-outline-variant/20">
             <div className="flex justify-between items-center px-4 md:px-8 h-16 w-full max-w-7xl mx-auto">
               <div className="flex items-center gap-2 md:gap-8">
-                <Link href="/" className="font-headline text-xl md:text-3xl font-bold text-primary hover:opacity-80 transition-opacity truncate max-w-[200px] md:max-w-none">InsightGraph</Link>
+                <Link href="/" className="inline-flex items-baseline gap-1 font-mono font-semibold text-[15px] md:text-base text-primary hover:opacity-80 transition-opacity">
+                  <span className="text-on-surface-variant">&#9656;</span>insightgraph
+                </Link>
               </div>
               <div className="flex items-center gap-2 md:gap-4">
                 {userId && <NavLinks isAdmin={isAdmin} />}
@@ -42,7 +45,7 @@ export default async function RootLayout({ children }) {
 
                 {userId ? (
                   <>
-                    <Link href="/preferences" className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
+                    <Link href="/preferences" aria-label="Preferences" className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
                       <span className="material-symbols-outlined" data-icon="settings">settings</span>
                     </Link>
                     <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-lg" } }} />
@@ -50,14 +53,10 @@ export default async function RootLayout({ children }) {
                 ) : (
                   <>
                     <SignInButton mode="modal" signUpForceRedirectUrl="/onboarding" fallbackRedirectUrl="/">
-                      <button className="font-body text-sm text-on-surface-variant hover:text-primary rounded-lg px-3 py-2 transition-colors">
-                        Sign in
-                      </button>
+                      <Button variant="ghost" size="sm">Sign in</Button>
                     </SignInButton>
                     <SignUpButton mode="modal" forceRedirectUrl="/onboarding" fallbackRedirectUrl="/onboarding">
-                      <button className="font-body text-sm font-semibold bg-primary text-on-primary rounded-lg px-4 py-2 shadow-sm hover:opacity-90 transition-opacity">
-                        Get started
-                      </button>
+                      <Button variant="primary" size="sm">Get started</Button>
                     </SignUpButton>
                   </>
                 )}
