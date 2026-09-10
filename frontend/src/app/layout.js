@@ -65,17 +65,10 @@ export default async function RootLayout({ children }) {
             </div>
           </nav>
 
-          {userId ? (
-            <div className="flex-1 flex max-w-[1400px] mx-auto w-full relative pt-16">
-              <main className="flex-1 p-6 md:p-8 lg:p-10 w-full overflow-y-auto">
-                {children}
-              </main>
-            </div>
-          ) : (
-            <main className="flex-1 w-full pt-16">
-              {children}
-            </main>
-          )}
+          {/* Every screen owns its own width + padding via <PageShell>. */}
+          <main className="flex-1 w-full pt-16">
+            {children}
+          </main>
           </UserProvider>
         </ClerkThemeProvider>
         </ThemeProvider>

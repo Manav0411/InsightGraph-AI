@@ -43,10 +43,10 @@ export default function PipelineProgress({ active, progressData, onClose }) {
         
         <div className="p-6 pb-4 flex justify-between items-start border-b border-white/10">
           <div>
-            <h2 className="font-headline text-xl font-bold tracking-wide text-white mb-1">
+            <h2 className="font-mono text-xl font-bold tracking-wide text-white mb-1">
               {hasError ? 'Pipeline Interrupted' : isComplete ? 'Intelligence Briefing Synthesized' : 'Pipeline Execution'}
             </h2>
-            <p className="font-label text-sm text-white/60">
+            <p className="font-mono text-sm text-white/60">
               {hasError ? (progressData?.stage || 'Something went wrong') : isComplete ? 'Execution successful. Redirecting...' : 'Orchestrating AI agents...'}
             </p>
           </div>
@@ -68,7 +68,7 @@ export default function PipelineProgress({ active, progressData, onClose }) {
               <div className="w-20 h-20 bg-error/15 rounded-full flex items-center justify-center mb-6">
                 <span className="material-symbols-outlined text-4xl text-error">error</span>
               </div>
-              <h3 className="font-headline text-xl font-bold text-white mb-2">Run did not complete</h3>
+              <h3 className="font-mono text-xl font-bold text-white mb-2">Run did not complete</h3>
               <p className="text-white/70 text-sm max-w-[85%] mx-auto mb-6 break-words">
                 {progressData.error}
               </p>
@@ -87,7 +87,7 @@ export default function PipelineProgress({ active, progressData, onClose }) {
                 <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping"></div>
                 <span className="material-symbols-outlined text-5xl text-primary relative z-10">task_alt</span>
               </div>
-              <h3 className="font-headline text-2xl font-bold text-white mb-2">Signal Processing Complete</h3>
+              <h3 className="font-mono text-2xl font-bold text-white mb-2">Signal Processing Complete</h3>
               <p className="text-white/80 text-sm max-w-[80%] mx-auto mb-6">
                 Intelligence signals retrieved, grounded, and synthesized successfully.
               </p>
@@ -112,8 +112,8 @@ export default function PipelineProgress({ active, progressData, onClose }) {
                   </svg>
                   <div className="absolute inset-2 rounded-full pulse-ring pointer-events-none"></div>
                   <div className="text-center z-10 flex flex-col items-center justify-center w-full h-full bg-[#1e2220] rounded-full border border-white/5 shadow-inner">
-                    <span className="font-headline text-3xl font-bold text-[#8ecf9e] leading-none">{Math.round(progressData?.progress || 0)}<span className="text-lg text-[#8ecf9e]/80">%</span></span>
-                    <span className="font-label text-xs text-white/50 mt-1 uppercase tracking-wider">{progressData?.stage || 'Active'}</span>
+                    <span className="font-mono text-3xl font-bold text-[#8ecf9e] leading-none">{Math.round(progressData?.progress || 0)}<span className="text-lg text-[#8ecf9e]/80">%</span></span>
+                    <span className="font-mono text-xs text-white/50 mt-1 uppercase tracking-wider">{progressData?.stage || 'Active'}</span>
                   </div>
                 </div>
               </div>
@@ -126,8 +126,8 @@ export default function PipelineProgress({ active, progressData, onClose }) {
                     {progressData?.progress >= 33 ? <span className="material-symbols-outlined text-[16px] text-[#8ecf9e]">check</span> : <div className="w-2.5 h-2.5 rounded-full bg-[#8ecf9e] animate-pulse"></div>}
                   </div>
                   <div className="flex-1">
-                    <h4 className={`font-body font-bold text-base transition-colors duration-300 ${progressData?.progress >= 33 ? 'text-white/80 text-sm' : 'text-[#8ecf9e]'}`}>Data Ingestion</h4>
-                    <p className="font-label text-xs text-white/60 mt-0.5">Retrieving intelligence sources.</p>
+                    <h4 className={`font-mono font-bold text-base transition-colors duration-300 ${progressData?.progress >= 33 ? 'text-white/80 text-sm' : 'text-[#8ecf9e]'}`}>Data Ingestion</h4>
+                    <p className="font-mono text-xs text-white/60 mt-0.5">Retrieving intelligence sources.</p>
                   </div>
                 </div>
                 
@@ -136,8 +136,8 @@ export default function PipelineProgress({ active, progressData, onClose }) {
                     {progressData?.progress >= 66 ? <span className="material-symbols-outlined text-[16px] text-[#8ecf9e]">check</span> : progressData?.progress >= 33 ? <div className="w-2.5 h-2.5 rounded-full bg-[#8ecf9e] animate-pulse"></div> : <span className="material-symbols-outlined text-[16px] text-white/30">hourglass_empty</span>}
                   </div>
                   <div className="flex-1">
-                    <h4 className={`font-body font-bold text-base transition-colors duration-300 ${progressData?.progress >= 66 ? 'text-white/80 text-sm' : progressData?.progress >= 33 ? 'text-[#8ecf9e]' : 'text-white/80 text-sm'}`}>Grounding & Validation</h4>
-                    <p className="font-label text-sm text-white/60 mt-0.5">Checking facts against trusted sources.</p>
+                    <h4 className={`font-mono font-bold text-base transition-colors duration-300 ${progressData?.progress >= 66 ? 'text-white/80 text-sm' : progressData?.progress >= 33 ? 'text-[#8ecf9e]' : 'text-white/80 text-sm'}`}>Grounding & Validation</h4>
+                    <p className="font-mono text-sm text-white/60 mt-0.5">Checking facts against trusted sources.</p>
                   </div>
                 </div>
                 
@@ -146,8 +146,8 @@ export default function PipelineProgress({ active, progressData, onClose }) {
                     {progressData?.progress >= 100 ? <span className="material-symbols-outlined text-[16px] text-[#8ecf9e]">check</span> : progressData?.progress >= 66 ? <div className="w-2.5 h-2.5 rounded-full bg-[#8ecf9e] animate-pulse"></div> : <span className="material-symbols-outlined text-[16px] text-white/30">hourglass_empty</span>}
                   </div>
                   <div className="flex-1">
-                    <h4 className={`font-body font-bold text-base transition-colors duration-300 ${progressData?.progress >= 100 ? 'text-white/80 text-sm' : progressData?.progress >= 66 ? 'text-[#8ecf9e]' : 'text-white/80 text-sm'}`}>Synthesis & Delivery</h4>
-                    <p className="font-label text-xs text-white/60 mt-0.5">Drafting final briefing.</p>
+                    <h4 className={`font-mono font-bold text-base transition-colors duration-300 ${progressData?.progress >= 100 ? 'text-white/80 text-sm' : progressData?.progress >= 66 ? 'text-[#8ecf9e]' : 'text-white/80 text-sm'}`}>Synthesis & Delivery</h4>
+                    <p className="font-mono text-xs text-white/60 mt-0.5">Drafting final briefing.</p>
                   </div>
                 </div>
               </div>

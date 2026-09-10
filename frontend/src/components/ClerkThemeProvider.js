@@ -23,15 +23,15 @@ export function ClerkThemeProvider({ children }) {
           colorText: mounted && resolvedTheme === "dark" ? "#E4E0D8" : "#2E3230",
           colorInputBackground: mounted && resolvedTheme === "dark" ? "#121413" : "#FAF6F0",
           colorInputText: mounted && resolvedTheme === "dark" ? "#E4E0D8" : "#2E3230",
-          fontFamily: "'Nunito Sans', sans-serif",
+          fontFamily: "'Newsreader', Georgia, serif",
           borderRadius: '16px'
         },
         elements: {
           rootBox: "rounded-2xl overflow-hidden",
           cardBox: "rounded-2xl overflow-hidden",
           card: "bg-surface-container shadow-2xl border border-outline-variant/30 rounded-2xl overflow-hidden",
-          headerTitle: "font-headline text-4xl font-bold text-on-surface tracking-tight",
-          headerSubtitle: "text-on-surface-variant font-body text-lg",
+          headerTitle: "font-display text-4xl text-on-surface tracking-tight",
+          headerSubtitle: "text-on-surface-variant font-reader text-lg",
           socialButtonsBlockButton: "bg-surface border border-outline-variant/40 hover:bg-surface-variant text-on-surface transition-colors rounded-xl py-3 shadow-sm",
           socialButtonsBlockButtonText: "font-bold tracking-wide",
           dividerLine: "bg-outline-variant/30",
