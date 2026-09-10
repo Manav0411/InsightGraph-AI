@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '../../context/UserContext';
 import { API_BASE_URL } from '../../lib/config';
+import { PageShell, Card, Chip, Button } from '../../components/ui';
 
 const TOPICS = [
   'AI Agents & Agentic Workflows',
@@ -22,6 +23,8 @@ const TOPICS = [
   'AI Startups & Funding',
   'AI Reasoning & Planning'
 ];
+
+const MAX_TOPICS = 10;
 
 export default function Onboarding() {
   const { user, getToken } = useUser();
@@ -64,10 +67,8 @@ export default function Onboarding() {
   const toggleTopic = (topic) => {
     if (selectedTopics.includes(topic)) {
       setSelectedTopics(selectedTopics.filter(t => t !== topic));
-    } else {
-      if (selectedTopics.length < 10) {
-        setSelectedTopics([...selectedTopics, topic]);
-      }
+    } else if (selectedTopics.length < MAX_TOPICS) {
+      setSelectedTopics([...selectedTopics, topic]);
     }
   };
 
@@ -84,7 +85,7 @@ export default function Onboarding() {
         },
         body: JSON.stringify({ preferred_topics: selectedTopics })
       });
-      
+
       const genRes = await fetch(`${API_BASE_URL}/newsletter/generate-async`, {
         method: 'POST',
         headers: {
@@ -107,68 +108,66 @@ export default function Onboarding() {
 
   if (checking) {
     return (
-      <div className="flex justify-center items-center h-[60vh]">
-        <div className="w-10 h-10 border-4 border-outline-variant/30 border-t-primary rounded-full animate-spin"></div>
-      </div>
+      <PageShell width="narrow">
+        <div className="flex justify-center items-center min-h-[55vh]">
+          <div className="w-9 h-9 border-2 border-outline-variant/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] max-w-2xl mx-auto py-12 px-6">
-      <div className="w-full bg-surface-container shadow-2xl border border-outline-variant/30 p-10 md:p-14">
-        
-        <div className="mb-10 text-center">
-          <span className="material-symbols-outlined text-[48px] text-primary mb-4">radar</span>
-          <h1 className="font-headline text-4xl font-bold text-on-surface mb-3 tracking-tight">Tune Your Radar</h1>
-          <p className="text-on-surface-variant font-body text-lg">
-            Select up to 10 topics. InsightGraph will actively monitor the ecosystem for signals matching these parameters.
-            <br/><span className="text-sm opacity-80 mt-1 inline-block">You can add more topics anytime in Preferences.</span>
+    <PageShell width="narrow">
+      <Card className="p-8 md:p-12 flex flex-col gap-8">
+        <div className="flex flex-col gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-primary">first run</span>
+          <h1 className="font-display text-4xl md:text-5xl leading-[1.05] text-on-surface">
+            Tune your radar
+          </h1>
+          <p className="font-reader text-on-surface-variant text-lg leading-relaxed">
+            Pick up to {MAX_TOPICS} topics. The ranker boosts anything matching them, so your beats
+            float to the top of each run. You can change these anytime in Preferences.
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {TOPICS.map(topic => {
-            const isSelected = selectedTopics.includes(topic);
-            return (
-              <button
-                key={topic}
-                onClick={() => toggleTopic(topic)}
-                className={`px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors border
-                  ${isSelected 
-                    ? 'bg-primary text-on-primary border-primary shadow-[2px_2px_0px_0px_rgba(var(--color-primary),0.3)]' 
-                    : 'bg-surface text-on-surface-variant border-outline-variant/60 hover:border-primary/50 hover:text-on-surface'
-                  }
-                `}
-              >
-                {topic}
-              </button>
-            );
-          })}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
+            {TOPICS.map(topic => {
+              const isSelected = selectedTopics.includes(topic);
+              const atLimit = !isSelected && selectedTopics.length >= MAX_TOPICS;
+              return (
+                <Chip
+                  key={topic}
+                  as="button"
+                  type="button"
+                  selected={isSelected}
+                  onClick={() => toggleTopic(topic)}
+                  disabled={atLimit}
+                  className={atLimit ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
+                >
+                  {topic}
+                </Chip>
+              );
+            })}
+          </div>
+          <span className="font-mono text-[11px] text-on-surface-variant">
+            {selectedTopics.length} / {MAX_TOPICS} selected
+          </span>
         </div>
 
-        <div className="flex flex-col items-center gap-4 border-t border-outline-variant/30 pt-8">
-          <button
+        <div className="flex flex-col items-stretch gap-3 border-t border-outline-variant/30 pt-6">
+          <Button
+            size="lg"
             onClick={handleComplete}
             disabled={isSaving || selectedTopics.length === 0}
-            className={`w-full max-w-sm py-4 font-bold tracking-wide uppercase transition-colors
-              ${selectedTopics.length > 0 && !isSaving
-                ? 'bg-primary hover:bg-primary/90 text-on-primary shadow-[4px_4px_0px_0px_rgba(var(--color-outline-variant),0.3)]' 
-                : 'bg-surface-variant text-on-surface-variant cursor-not-allowed border border-outline-variant/50'
-              }
-            `}
           >
-            {isSaving ? "Calibrating..." : "Initialize Reader"}
-          </button>
-          
-          <button 
-            onClick={() => router.push('/')}
-            className="text-xs font-bold text-on-surface-variant hover:text-primary uppercase tracking-widest mt-2"
-          >
+            {isSaving ? "Scheduling your first run…" : "Start my first briefing"}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
             Skip for now
-          </button>
+          </Button>
         </div>
-
-      </div>
-    </div>
+      </Card>
+    </PageShell>
   );
 }
