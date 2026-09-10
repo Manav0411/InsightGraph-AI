@@ -4,7 +4,7 @@ import { UserProvider } from "../context/UserContext";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { ThemeToggle } from "../components/ThemeToggle";
 import Link from 'next/link';
-import { SignInButton, UserButton } from '@clerk/nextjs';
+import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { ClerkThemeProvider } from '../components/ClerkThemeProvider';
 import { Agentation } from "agentation";
@@ -36,32 +36,47 @@ export default async function RootLayout({ children }) {
                 <Link href="/" className="font-headline text-xl md:text-3xl font-bold text-primary hover:opacity-80 transition-opacity truncate max-w-[200px] md:max-w-none">InsightGraph</Link>
               </div>
               <div className="flex items-center gap-2 md:gap-4">
-                <NavLinks isAdmin={isAdmin} />
+                {userId && <NavLinks isAdmin={isAdmin} />}
 
                 <ThemeToggle />
-                <Link href="/preferences" className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
-                  <span className="material-symbols-outlined" data-icon="settings">settings</span>
-                </Link>
-                
+
                 {userId ? (
-                  <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-lg" } }} />
+                  <>
+                    <Link href="/preferences" className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
+                      <span className="material-symbols-outlined" data-icon="settings">settings</span>
+                    </Link>
+                    <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-lg" } }} />
+                  </>
                 ) : (
-                  <SignInButton mode="modal" signUpForceRedirectUrl="/onboarding" fallbackRedirectUrl="/">
-                    <button className="text-on-surface-variant hover:text-primary hover:bg-surface-variant/30 rounded-lg p-2 transition-colors flex items-center justify-center">
-                      <span className="material-symbols-outlined" data-icon="account_circle">account_circle</span>
-                    </button>
-                  </SignInButton>
+                  <>
+                    <SignInButton mode="modal" signUpForceRedirectUrl="/onboarding" fallbackRedirectUrl="/">
+                      <button className="font-body text-sm text-on-surface-variant hover:text-primary rounded-lg px-3 py-2 transition-colors">
+                        Sign in
+                      </button>
+                    </SignInButton>
+                    <SignUpButton mode="modal" forceRedirectUrl="/onboarding" fallbackRedirectUrl="/onboarding">
+                      <button className="font-body text-sm font-semibold bg-primary text-on-primary rounded-lg px-4 py-2 shadow-sm hover:opacity-90 transition-opacity">
+                        Get started
+                      </button>
+                    </SignUpButton>
+                  </>
                 )}
 
               </div>
             </div>
           </nav>
-          
-          <div className="flex-1 flex max-w-[1400px] mx-auto w-full relative pt-16">
-            <main className="flex-1 p-6 md:p-8 lg:p-10 w-full overflow-y-auto">
+
+          {userId ? (
+            <div className="flex-1 flex max-w-[1400px] mx-auto w-full relative pt-16">
+              <main className="flex-1 p-6 md:p-8 lg:p-10 w-full overflow-y-auto">
+                {children}
+              </main>
+            </div>
+          ) : (
+            <main className="flex-1 w-full pt-16">
               {children}
             </main>
-          </div>
+          )}
           </UserProvider>
         </ClerkThemeProvider>
         </ThemeProvider>
