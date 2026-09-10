@@ -6,6 +6,7 @@ import Link from 'next/link';
 import PipelineProgress from '../../../components/orchestration/PipelineProgress';
 import { API_BASE_URL } from '../../../lib/config';
 import { useUser } from '../../../context/UserContext';
+import { PageShell, PageHeader, Card, Chip, Button } from '../../../components/ui';
 
 const TASK_KEY = 'active_task_id';
 const MAX_RUN_MS = 30 * 60 * 1000; // give up watching after 30 min
@@ -25,6 +26,16 @@ const STAGE_PCT = {
 function stageLabel(raw) {
   if (!raw) return 'Working';
   return raw.replace(/^Running:\s*/i, '').trim() || 'Working';
+}
+
+function Metric({ label, value, status }) {
+  return (
+    <Card className="p-5 flex flex-col gap-2">
+      <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-on-surface-variant">{label}</span>
+      <span className="font-display text-4xl leading-none text-on-surface tabular-nums">{value}</span>
+      {status && <span className="font-mono text-[11px] text-primary">{status}</span>}
+    </Card>
+  );
 }
 
 export default function CommandCenter() {
@@ -228,7 +239,13 @@ export default function CommandCenter() {
     setGenerateProgress(null);
   };
 
-  if (loading) return <div className="p-8 font-body text-on-surface-variant flex items-center justify-center min-h-[50vh]"><div className="animate-pulse">Initializing Telemetry...</div></div>;
+  if (loading) {
+    return (
+      <PageShell width="wide">
+        <p className="font-mono text-[13px] text-on-surface-variant py-16 text-center">Loading telemetry…</p>
+      </PageShell>
+    );
+  }
 
   // Real telemetry derived from the most recent persisted briefing (/newsletter/history).
   const latestBriefing = history?.[0] || null;
@@ -242,240 +259,126 @@ export default function CommandCenter() {
   const fmt = (v, digits = 1) => (v === null || v === undefined ? '—' : Number(v).toFixed(digits));
 
   return (
-    <div className="flex flex-col items-center max-w-5xl mx-auto w-full gap-10 pb-20">
-      
-      <div className="w-full flex flex-col items-center pt-8">
-        <div className="relative group">
-          <button 
-            onClick={generateBriefing}
-            disabled={isGenerating}
-            className={`relative flex items-center gap-3 px-10 py-5 rounded-2xl font-bold font-headline text-lg tracking-wide transition-all duration-300 shadow-xl border border-outline-variant/30
-              ${isGenerating 
-                ? 'bg-surface-variant text-on-surface-variant cursor-not-allowed' 
-                : 'bg-surface-container text-on-surface hover:text-primary hover:border-primary/50'}`}
-          >
-            {isGenerating ? (
-              <>
-                <span className="material-symbols-outlined text-[24px] animate-spin text-tertiary">autorenew</span> 
-                <span>ORCHESTRATING...</span>
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-[24px] text-primary">bolt</span> 
-                <span>SYNTHESIZE NEW BRIEFING</span>
-              </>
-            )}
-          </button>
-        </div>
-        {isGenerating && <p className="mt-4 text-sm font-bold text-tertiary animate-pulse uppercase tracking-widest">Pipeline Active - Streaming Telemetry</p>}
-      </div>
+    <PageShell width="wide" className="flex flex-col gap-8">
+      <PageHeader
+        title="Mission control"
+        subtitle="Trigger a run, watch the pipeline, and read the telemetry from the last one."
+        actions={
+          <Button onClick={generateBriefing} disabled={isGenerating}>
+            <span className={`material-symbols-outlined text-[18px] ${isGenerating ? 'animate-spin' : ''}`}>
+              {isGenerating ? 'autorenew' : 'bolt'}
+            </span>
+            {isGenerating ? 'Running…' : 'Synthesize briefing'}
+          </Button>
+        }
+      />
 
       <PipelineProgress active={isGenerating} progressData={generateProgress} onClose={dismissProgress} />
 
-      <div className="w-full bg-surface-container-low rounded-3xl border border-outline-variant/20 p-8 soft-shadow">
-        <div className="flex justify-between items-center mb-8 border-b border-outline-variant/20 pb-4">
-          <h2 className="font-headline text-2xl font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">monitoring</span>
-            Advanced Telemetry
-          </h2>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-on-surface-variant bg-surface-variant/50 px-3 py-1.5 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-green-500"></span>
-            {lastRunAt ? `Last run ${lastRunAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No runs yet'}
-          </div>
+      <section className="flex flex-col gap-4">
+        <div className="flex items-baseline justify-between">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-primary">last run</span>
+          <span className="font-mono text-[11px] text-on-surface-variant">
+            {lastRunAt ? lastRunAt.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'no runs yet'}
+          </span>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          
-          <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-primary/30 transition-colors">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full blur-2xl"></div>
-            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Grounding Reliability</h3>
-            <p className="text-[10px] text-on-surface-variant/70 mb-6">Latest Briefing</p>
-            <div className="flex-1 flex flex-col justify-center items-center">
-              <div className="relative flex items-center justify-center w-28 h-28 mb-2">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-surface-variant"></circle>
-                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-primary" strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * (grounding ?? 0)) / 100}></circle>
-                </svg>
-                <div className="absolute flex flex-col items-center justify-center">
-                  <span className="font-headline text-2xl font-bold text-on-surface">{fmt(grounding)}%</span>
-                </div>
-              </div>
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">
-                {grounding === null ? 'No Data' : grounding >= 90 ? 'Stable' : 'Degraded'}
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-primary/30 transition-colors">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-tertiary/10 rounded-bl-full blur-2xl"></div>
-            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Signals Delivered</h3>
-            <p className="text-[10px] text-on-surface-variant/70 mb-6">Latest Briefing</p>
-            <div className="flex-1 flex flex-col justify-between">
-              <div className="text-5xl font-headline font-bold text-on-surface">{signalsDelivered}</div>
-              <div className="mt-4 flex items-end gap-2 h-12">
-                <div className="w-full bg-tertiary/40 rounded-t-sm h-[60%]"></div>
-                <div className="w-full bg-tertiary/60 rounded-t-sm h-[80%]"></div>
-                <div className="w-full bg-tertiary rounded-t-sm h-[100%]"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-error/30 transition-colors">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-error/10 rounded-bl-full blur-2xl"></div>
-            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">Execution Time</h3>
-            <p className="text-[10px] text-on-surface-variant/70 mb-6">Latest Pipeline Run</p>
-            <div className="flex-1 flex flex-col justify-between">
-              <div className="flex items-center gap-3">
-                <div className="text-5xl font-headline font-bold text-on-surface">{execTime === null ? '—' : `${execTime.toFixed(0)}s`}</div>
-                <span className="material-symbols-outlined text-tertiary bg-tertiary/10 p-1.5 rounded-lg text-[20px]">timer</span>
-              </div>
-              <div className="mt-4 w-full h-12 flex items-center">
-                <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 30">
-                  <path d="M0,20 L20,15 L40,25 L60,10 L80,20 L100,5" fill="none" stroke="currentColor" strokeWidth="2" className="text-error/50" vectorEffect="non-scaling-stroke"></path>
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-2xl p-6 border border-outline-variant/10 shadow-sm flex flex-col relative overflow-hidden group hover:border-primary/30 transition-colors">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full blur-2xl"></div>
-            <h3 className="font-bold text-xs uppercase tracking-widest text-on-surface-variant mb-1">SQI Score</h3>
-            <p className="text-[10px] text-on-surface-variant/70 mb-6">Signal Quality Index</p>
-            <div className="flex-1 flex flex-col justify-between">
-              <div className="text-5xl font-headline font-bold text-on-surface">{fmt(sqiScore)}</div>
-              <div className="mt-4 text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                {sqiScore === null ? 'No Data' : sqiScore >= 60 ? 'Healthy' : sqiScore >= 45 ? 'Fair' : 'Low'}
-              </div>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Metric
+            label="Grounding"
+            value={`${fmt(grounding)}%`}
+            status={grounding === null ? 'no data' : grounding >= 90 ? 'stable' : 'degraded'}
+          />
+          <Metric
+            label="SQI"
+            value={fmt(sqiScore)}
+            status={sqiScore === null ? 'no data' : sqiScore >= 60 ? 'healthy' : sqiScore >= 45 ? 'fair' : 'low'}
+          />
+          <Metric label="Signals" value={signalsDelivered} />
+          <Metric label="Execution" value={execTime === null ? '—' : `${execTime.toFixed(0)}s`} />
         </div>
-      </div>
+      </section>
 
-      <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          
-          <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20 soft-shadow flex flex-col h-1/2">
-            <h3 className="font-headline text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-[20px]">tune</span> Active Pipeline Parameters
-            </h3>
-            <div className="flex flex-col gap-4 flex-1 justify-center">
-              <div>
-                <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2 block">Core Topics Target</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {preferences?.preferred_topics?.slice(0, 3).map((topic, i) => (
-                    <span key={i} className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-surface-variant/50 text-on-surface-variant rounded">
-                      {topic}
-                    </span>
-                  ))}
-                  {(preferences?.preferred_topics?.length || 0) > 3 && (
-                    <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-surface-variant/30 text-on-surface-variant rounded">
-                      +{(preferences?.preferred_topics?.length || 0) - 3}
-                    </span>
-                  )}
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="p-6 flex flex-col gap-4 lg:col-span-1">
+          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">active parameters</span>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-on-surface-variant">topics</span>
+              <div className="flex flex-wrap gap-1.5">
+                {preferences?.preferred_topics?.slice(0, 4).map((topic, i) => (
+                  <Chip key={i} selected>{topic}</Chip>
+                ))}
+                {(preferences?.preferred_topics?.length || 0) > 4 && (
+                  <Chip>+{(preferences?.preferred_topics?.length || 0) - 4}</Chip>
+                )}
               </div>
-              
-              <div>
-                <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2 block">Active Exclusions</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {preferences?.excluded_topics?.length > 0 ? (
-                    preferences.excluded_topics.slice(0, 3).map((exclusion, i) => (
-                      <span key={i} className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-error/10 text-error rounded">
-                        {exclusion}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-[10px] italic text-on-surface-variant/70">No active exclusions</span>
-                  )}
-                </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-on-surface-variant">exclusions</span>
+              <div className="flex flex-wrap gap-1.5">
+                {preferences?.excluded_topics?.length > 0 ? (
+                  preferences.excluded_topics.slice(0, 4).map((exclusion, i) => (
+                    <Chip key={i} muted>{exclusion}</Chip>
+                  ))
+                ) : (
+                  <span className="font-reader text-sm text-on-surface-variant">None</span>
+                )}
               </div>
             </div>
           </div>
+        </Card>
 
-          <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20 soft-shadow flex flex-col h-1/2">
-            <h3 className="font-headline text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-secondary text-[20px]">history</span> Recent Orchestration Runs
-            </h3>
-            <div className="flex flex-col gap-3 flex-1 justify-center overflow-y-auto max-h-[140px] custom-scrollbar pr-1">
-              {history?.slice(0, 3).map((run, i) => (
-                <div key={i} className="flex flex-col gap-1.5 bg-surface p-3 rounded-xl border border-outline-variant/10">
-                  <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-                    <span>
-                      {new Date(run.generated_at.endsWith('Z') ? run.generated_at : run.generated_at + 'Z').toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <span className="text-primary">{run.signal_quality_index?.toFixed(1) || 'N/A'} SQI</span>
-                  </div>
-                  <div className="font-medium text-sm text-on-surface truncate capitalize">
-                    {run.dominant_topics?.[0] || 'Ecosystem Shift'}
-                  </div>
-                </div>
-              ))}
-              {(!history || history.length === 0) && (
-                <div className="text-sm text-on-surface-variant italic text-center">No recent orchestration history...</div>
-              )}
-            </div>
-          </div>
-
-        </div>
-
-        <div className="lg:col-span-2 bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20 soft-shadow flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-tertiary text-[20px]">radar</span> Live Signal Radar
-            </h3>
-            <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest bg-surface px-2 py-1 rounded border border-outline-variant/20">
-              {data?.articles?.length || 0} Targets Acquired
-            </span>
-          </div>
-          
-          <div className="flex flex-col gap-2 overflow-y-auto max-h-[350px] pr-2 custom-scrollbar">
-            {data?.articles?.map((article, idx) => (
-              <div key={idx} className="bg-surface p-3 rounded-xl border border-outline-variant/10 flex items-center justify-between gap-4 hover:border-primary/30 transition-colors group">
-                <div className="flex flex-col overflow-hidden">
-                  <span className="text-[10px] font-bold text-tertiary uppercase tracking-widest mb-0.5">
-                    {article.tags?.[0] || 'Signal'}
+        <Card className="p-6 flex flex-col gap-4 lg:col-span-2">
+          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">signal radar</span>
+          <div className="flex flex-col divide-y divide-outline-variant/20 max-h-[340px] overflow-y-auto -my-1">
+            {data?.articles?.length ? data.articles.map((article, idx) => (
+              <div key={idx} className="flex items-center justify-between gap-4 py-2.5">
+                <div className="flex flex-col min-w-0">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-on-surface-variant">
+                    {article.tags?.[0] || article.source}
                   </span>
-                  <span className="font-bold text-sm text-on-surface truncate group-hover:text-primary transition-colors">
-                    {article.title}
-                  </span>
+                  <span className="font-reader text-sm text-on-surface truncate">{article.title}</span>
                 </div>
-                
-                <div className="flex items-center gap-4 shrink-0">
-                  <div className="flex flex-col items-end hidden md:flex">
-                    <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Strength</span>
-                    <div className="flex gap-0.5 h-1.5">
-                      <div className={`w-1.5 rounded-full ${article.trend_score > 3 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
-                      <div className={`w-1.5 rounded-full ${article.trend_score > 5 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
-                      <div className={`w-1.5 rounded-full ${article.trend_score > 7 ? 'bg-primary' : 'bg-surface-variant'}`}></div>
-                      <div className={`w-1.5 rounded-full ${article.trend_score > 8.5 ? 'bg-tertiary' : 'bg-surface-variant'}`}></div>
-                    </div>
-                  </div>
-                  <div className="text-xs font-bold text-on-surface-variant bg-surface-variant/50 px-2 py-1 rounded uppercase tracking-wider w-20 text-center truncate">
-                    {article.source}
-                  </div>
-                </div>
+                <span className="font-mono text-[11px] text-on-surface-variant shrink-0">
+                  trend {article.trend_score != null ? article.trend_score.toFixed(1) : '—'}
+                </span>
               </div>
-            ))}
-            {(!data?.articles || data.articles.length === 0) && (
-              <div className="text-center p-8 text-on-surface-variant italic">
-                Radar clear. Synthesize briefing to acquire signals.
-              </div>
+            )) : (
+              <p className="font-reader text-sm text-on-surface-variant py-4">
+                Radar clear. Synthesize a briefing to acquire signals.
+              </p>
             )}
           </div>
-        </div>
-
-      </div>
-      
-      <div className="flex items-center justify-center mt-4">
-        <Link href="/" className="group flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-bold uppercase tracking-widest text-sm">
-          Return to Intelligence Reader
-          <span className="material-symbols-outlined transform group-hover:translate-x-1 transition-transform">arrow_forward</span>
-        </Link>
+        </Card>
       </div>
 
-    </div>
+      <section className="flex flex-col gap-3">
+        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">recent runs</span>
+        {history?.length ? (
+          <div className="flex flex-col gap-2">
+            {history.slice(0, 5).map((run, i) => (
+              <Link
+                key={i}
+                href={`/history/${run.id}`}
+                className="flex items-center justify-between gap-4 py-2.5 px-4 rounded-lg border border-outline-variant/30 hover:border-primary/30 transition-colors"
+              >
+                <span className="font-mono text-[11px] text-on-surface-variant shrink-0">
+                  {new Date(run.generated_at.endsWith('Z') ? run.generated_at : run.generated_at + 'Z').toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                </span>
+                <span className="font-reader text-sm text-on-surface truncate flex-1">{run.title || run.dominant_topics?.[0] || 'Briefing'}</span>
+                <span className="font-mono text-[11px] text-primary shrink-0">SQI {run.signal_quality_index?.toFixed(1) || '—'}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="font-reader text-sm text-on-surface-variant">No runs yet.</p>
+        )}
+      </section>
+
+      <Link href="/" className="inline-flex items-center gap-1.5 font-mono text-[12px] text-on-surface-variant hover:text-primary transition-colors">
+        Intelligence reader
+        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+      </Link>
+    </PageShell>
   );
 }
