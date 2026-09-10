@@ -193,7 +193,7 @@ export default function Landing() {
                   <path className="lp-e" d="M318 54 H344" />
                   <path className="lp-e" d="M422 54 H448" />
                   <path className="lp-e" d="M526 54 H552" />
-                  <path className="lp-e-retry" d="M582 74 V106 H52 V74" />
+                  <path className="lp-e-retry" d="M477 74 V106 H52 V74" />
                   <g>
                     <rect className="lp-n-box" x="12" y="36" width="98" height="36" rx="6" />
                     <text className="lp-n-label" x="61" y="59" textAnchor="middle">
