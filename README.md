@@ -127,8 +127,14 @@ TAVILY_API_KEY=your_key
 RESEND_API_KEY=your_key
 DATABASE_URL=postgresql://user:password@host/dbname   # needs the pgvector extension
 
-CLERK_JWKS_URL=https://<your-subdomain>.clerk.accounts.dev/.well-known/jwks.json
 FRONTEND_URL=http://localhost:3000
+
+# Optional, prod only: pins the JWT issuer get_current_user() will accept.
+# Leave unset locally — a local backend legitimately verifies dev-instance
+# tokens. Set it in production so a validly-signed token from any *other*
+# Clerk instance (e.g. a dev key pointed at the prod API by mistake) is
+# rejected instead of silently minting a new user in the prod database.
+# CLERK_ISSUER=https://clerk.insightgraph.dev
 
 # optional
 LANGCHAIN_TRACING_V2=true
@@ -177,7 +183,9 @@ exists it shows the reader.
 - **Frontend → Vercel.** Set `NEXT_PUBLIC_API_URL` to the Render backend URL
   and the Clerk keys to their production values.
 - **Backend → Render** (web service). Set `FRONTEND_URL` to the Vercel domain
-  so CORS allows it, plus a `CRON_SECRET` for the scheduler route.
+  so CORS allows it, `CRON_SECRET` for the scheduler route, and
+  `CLERK_ISSUER=https://clerk.insightgraph.dev` so it only trusts production
+  Clerk tokens.
 - **Scheduling → GitHub Actions.** `.github/workflows/cron.yml` posts to
   `/scheduler/run-now` nightly with `X-Cron-Secret`.
 
