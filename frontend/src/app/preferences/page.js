@@ -50,6 +50,7 @@ export default function Preferences() {
   const [isAddingSource, setIsAddingSource] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // 'success' | 'error' | null
   const suggestionsRef = useRef(null);
 
   useEffect(() => {
@@ -75,19 +76,29 @@ export default function Preferences() {
 
   const savePreferences = async () => {
     setSaving(true);
+    setSaveStatus(null);
     try {
-      await updatePreferences({
+      const ok = await updatePreferences({
         preferred_topics: topics,
         excluded_topics: exclusions,
         preferred_sources: sources,
         email_delivery_enabled: emailDelivery
       });
+      setSaveStatus(ok ? 'success' : 'error');
     } catch (err) {
       console.error(err);
+      setSaveStatus('error');
     } finally {
       setSaving(false);
     }
   };
+
+  // Clear the save status a few seconds after it appears.
+  useEffect(() => {
+    if (!saveStatus) return;
+    const timer = setTimeout(() => setSaveStatus(null), 3500);
+    return () => clearTimeout(timer);
+  }, [saveStatus]);
 
   const removeTopic = (index) => setTopics(topics.filter((_, i) => i !== index));
   const removeExclusion = (index) => setExclusions(exclusions.filter((_, i) => i !== index));
@@ -267,12 +278,25 @@ export default function Preferences() {
         </div>
       </SectionCard>
 
-      <div className="flex justify-end gap-3 pt-2">
+      <div className="flex items-center justify-end gap-4 pt-2">
+        {saveStatus === 'success' && (
+          <span className="font-mono text-[12px] text-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">check_circle</span>
+            Preferences saved
+          </span>
+        )}
+        {saveStatus === 'error' && (
+          <span className="font-mono text-[12px] text-error flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">error</span>
+            Couldn&rsquo;t save — try again
+          </span>
+        )}
         <Button variant="ghost" onClick={() => {
           setTopics(preferences?.preferred_topics || []);
           setExclusions(preferences?.excluded_topics || []);
           setSources(preferences?.preferred_sources || []);
           setEmailDelivery(preferences?.email_delivery_enabled ?? true);
+          setSaveStatus(null);
         }}>
           Discard changes
         </Button>
