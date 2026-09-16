@@ -39,9 +39,13 @@ export function UserProvider({ children }) {
     setLoading(true);
     try {
       const token = await getToken();
+      const email = clerkUser?.primaryEmailAddress?.emailAddress;
       const res = await fetch(`${API_BASE_URL}/users/${user.id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          // Lets the backend stamp a brand-new user row with the right email
+          // immediately, rather than waiting on the Clerk webhook to catch up.
+          ...(email ? { 'X-User-Email': email } : {})
         }
       });
       if (res.ok) {

@@ -29,9 +29,16 @@ def create_or_get_user(db: Session, user_id: str, email: str = None) -> User:
             logger.info(f"[Persistence] Updated email for user {user_id}")
     return user
 
-def get_user_profile_pydantic(db: Session, user_id: str) -> UserProfile:
-    """Loads user preferences from PostgreSQL and returns the Pydantic UserProfile expected by LangGraph."""
-    db_user = create_or_get_user(db, user_id)
+def get_user_profile_pydantic(db: Session, user_id: str, email: str = None) -> UserProfile:
+    """Loads user preferences from PostgreSQL and returns the Pydantic UserProfile expected by LangGraph.
+
+    `email` is optional and only used to (re)stamp the user's row when the
+    caller has it on hand (see routes/users.py) — this is what lets a brand
+    new user get a correct `email` at row-creation time instead of waiting on
+    the Clerk `user.created` webhook, which the client's own first request
+    routinely beats.
+    """
+    db_user = create_or_get_user(db, user_id, email=email)
     db_prefs = db_user.preferences
     
     return UserProfile(
